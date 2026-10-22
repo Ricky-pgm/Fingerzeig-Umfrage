@@ -6,7 +6,8 @@
   "description": "Online-Umfrage zum Studienprojekt Fingerzeig (Kochen mit Handgesten)",
   "scripts": {
     "test": "node --test test/*.test.js",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test --grep-invert \"screenshots\"",
+    "screenshots": "playwright test e2e/screenshots.spec.js"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.2.0"
