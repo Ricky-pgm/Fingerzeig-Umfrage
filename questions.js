@@ -88,25 +88,25 @@ export const GESTURE_ACTIONS = [
 ];
 
 export const HAND_SHAPES = [
-  ['open_palm', 'Offene Hand', '✋'],
-  ['fist', 'Faust', '✊'],
-  ['point', 'Ein Finger zeigt', '☝️'],
-  ['thumb_up', 'Daumen hoch', '👍'],
-  ['thumb_down', 'Daumen runter', '👎'],
-  ['victory', 'Zwei Finger (V)', '✌️'],
-  ['pinch', 'Finger zusammen', '🤏'],
-  ['other', 'Andere', '…'],
+  ['open_palm', 'Offene Hand'],
+  ['fist', 'Faust'],
+  ['point', 'Ein Finger zeigt'],
+  ['thumb_up', 'Daumen hoch'],
+  ['thumb_down', 'Daumen runter'],
+  ['victory', 'Zwei Finger (V)'],
+  ['pinch', 'Finger zusammen'],
+  ['other', 'Andere'],
 ];
 
 export const MOTIONS = [
-  ['still', 'Still halten', '•'],
-  ['swipe_left', 'Wischen nach links', '←'],
-  ['swipe_right', 'Wischen nach rechts', '→'],
-  ['swipe_up', 'Wischen nach oben', '↑'],
-  ['swipe_down', 'Wischen nach unten', '↓'],
-  ['circle', 'Kreisen', '↻'],
-  ['tap', 'In die Luft tippen', '◉'],
-  ['other', 'Andere', '…'],
+  ['still', 'Still halten'],
+  ['swipe_left', 'Wischen nach links'],
+  ['swipe_right', 'Wischen nach rechts'],
+  ['swipe_up', 'Wischen nach oben'],
+  ['swipe_down', 'Wischen nach unten'],
+  ['circle', 'Kreisen'],
+  ['tap', 'In die Luft tippen'],
+  ['other', 'Andere'],
 ];
 
 export const ABOUT = {

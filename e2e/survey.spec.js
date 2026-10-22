@@ -34,7 +34,6 @@ test('fills in the whole survey and submits it', async ({ page }) => {
   for (let i = 0; i < 5; i += 1) {
     await pick(page, 'Offene Hand');
     await pick(page, 'Wischen nach links');
-    await expect(page.getByRole('button', { name: 'Weiter' })).toBeDisabled();
     await page.getByRole('group', { name: /passt/ }).getByRole('radio', { name: '4' }).check();
     await page.getByRole('group', { name: /leicht/ }).getByRole('radio', { name: /^5/ }).check();
     await page.getByRole('button', { name: 'Weiter' }).click();
@@ -70,7 +69,7 @@ test('keeps the progress after a reload', async ({ page }) => {
 test('shows an error and allows a retry when sending fails', async ({ page }) => {
   await page.route('**/api/submit', (route) => route.fulfill({ status: 500, body: '{}' }));
   await page.addInitScript(() => {
-    sessionStorage.setItem('fingerzeig-umfrage-v2', JSON.stringify({
+    sessionStorage.setItem('fingerzeig-umfrage-v3', JSON.stringify({
       step: 12, consent: true,
       cooking: { dirtyHands: ['wash'], actions: ['next'], dirtyHandsOther: '', actionsOther: '', annoyance: '', frequency: 'weekly', device: 'phone', position: 'flat', distance: 'lt50' },
       order: ['next', 'back', 'timer', 'ingredients', 'pause'],
@@ -82,4 +81,80 @@ test('shows an error and allows a retry when sending fails', async ({ page }) =>
   await page.getByRole('button', { name: 'Antworten absenden' }).click();
   await expect(page.getByRole('alert')).toContainText('nicht geklappt');
   await expect(page.getByRole('button', { name: 'Erneut senden' })).toBeEnabled();
+});
+
+test('lists "Andere" last in both tile groups and shows a pictogram on every tile', async ({ page }) => {
+  await page.goto('/');
+  await page.getByLabel(/einverstanden/).check();
+  await page.getByRole('button', { name: /Los geht/ }).click();
+  await pick(page, 'Tablet');
+  await pick(page, 'Angelehnt, z. B. an die Wand');
+  await pick(page, '50 cm bis 1 m');
+  await pick(page, 'Etwa einmal pro Woche');
+  await page.getByRole('button', { name: 'Weiter' }).click();
+  await pick(page, 'Mit Knöchel, Ellbogen oder Handrücken tippen');
+  await page.getByRole('button', { name: 'Weiter' }).click();
+  await pick(page, 'Zum nächsten Schritt');
+  await page.getByRole('button', { name: 'Weiter' }).click();
+  await page.getByRole('button', { name: 'Verstanden' }).click();
+
+  for (const group of [/Hand halten|hältst/, /bewegst/]) {
+    const tiles = page.getByRole('group', { name: group }).locator('label.tile');
+    await expect(tiles).toHaveCount(8);
+    await expect(tiles.last()).toContainText('Andere');
+    await expect(page.getByRole('group', { name: group }).locator('svg.pic')).toHaveCount(8);
+  }
+});
+
+test('asks for consent at the checkbox instead of disabling the start button', async ({ page }) => {
+  await page.goto('/');
+  const start = page.getByRole('button', { name: /Los geht/ });
+  await expect(start).toBeEnabled();
+  await start.click();
+  const checkbox = page.getByLabel(/einverstanden/);
+  await expect(page.getByText('Bitte stimm zu, um zu starten.')).toBeVisible();
+  await expect(checkbox).toBeFocused();
+  await expect(checkbox).toHaveAccessibleDescription(/Bitte stimm zu/);
+  await checkbox.check();
+  await expect(page.getByText('Bitte stimm zu, um zu starten.')).toHaveCount(0);
+});
+
+test('shows what is missing at each field and focuses the first one', async ({ page }) => {
+  await page.goto('/');
+  await page.getByLabel(/einverstanden/).check();
+  await page.getByRole('button', { name: /Los geht/ }).click();
+  await pick(page, 'Tablet');
+  await page.getByRole('button', { name: 'Weiter' }).click();
+  const frequency = page.getByRole('group', { name: /Wie oft kochst du/ });
+  await expect(frequency.getByText('Bitte wähle eine Antwort.')).toBeVisible();
+  await expect(frequency).toHaveAccessibleDescription(/Bitte wähle eine Antwort/);
+  await expect(page.getByRole('radio', { name: 'Mehrmals pro Woche' })).toBeFocused();
+  await expect(page.getByRole('group', { name: /Welches Gerät/ }).getByText('Bitte wähle')).toHaveCount(0);
+});
+
+test('keeps keyboard focus on the chosen tile when the step updates', async ({ page }) => {
+  await page.goto('/');
+  await page.getByLabel(/einverstanden/).check();
+  await page.getByRole('button', { name: /Los geht/ }).click();
+  for (const name of ['Etwa einmal pro Woche', 'Tablet', 'Angelehnt, z. B. an die Wand', '50 cm bis 1 m']) await pick(page, name);
+  await page.getByRole('button', { name: 'Weiter' }).click();
+  await pick(page, 'Mit Knöchel, Ellbogen oder Handrücken tippen');
+  await page.getByRole('button', { name: 'Weiter' }).click();
+  await pick(page, 'Zum nächsten Schritt');
+  await page.getByRole('button', { name: 'Weiter' }).click();
+  await page.getByRole('button', { name: 'Verstanden' }).click();
+  const hands = page.getByRole('group', { name: /hältst/ });
+  await hands.getByRole('radio').first().focus();
+  await page.keyboard.press('Space');
+  await expect(hands.getByRole('radio', { checked: true })).toBeFocused();
+});
+
+test('keeps the action bar at the bottom of the screen', async ({ page }) => {
+  await page.goto('/');
+  await page.getByLabel(/einverstanden/).check();
+  await page.getByRole('button', { name: /Los geht/ }).click();
+  const bar = page.locator('.nav');
+  const box = await bar.boundingBox();
+  const viewport = page.viewportSize();
+  expect(box.y + box.height).toBeGreaterThan(viewport.height - 2);
 });
