@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="description" content="Kurze Umfrage zum Studienprojekt Fingerzeig: Kochen mit Handgesten statt Touch.">
+<meta name="theme-color" content="#1F3B2D">
+<title>Fingerzeig – Umfrage</title>
+<link rel="preload" href="/fonts/bricolage-grotesque-latin-800-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/styles.css">
+<script type="module" src="/app.js"></script>
+</head>
+<body>
+<header class="bar">
+  <div class="bar-inner">
+    <span class="brand">Fingerzeig</span>
+    <div class="progress" role="progressbar" aria-label="Fortschritt" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" hidden>
+      <div class="progress-fill"></div>
+    </div>
+  </div>
+</header>
+<main id="app" class="wrap" tabindex="-1">
+  <noscript><p class="lead">Bitte aktiviere JavaScript, um an der Umfrage teilzunehmen.</p></noscript>
+</main>
+<footer class="foot">
+  <span>Studienprojekt „Fingerzeig“ · FOM Hochschule</span>
+  <button type="button" class="link" id="privacy-open">Datenschutz</button>
+</footer>
+
+<dialog id="privacy" aria-labelledby="privacy-title">
+  <h2 id="privacy-title">Datenschutz</h2>
+  <p><strong>Wer:</strong> Usric Vanvanhossou, Student der FOM Hochschule, für das Projekt „Fingerzeig“ im Modul UX- und Webtechnologien. Kontakt: <!-- KONTAKT HIER EINTRAGEN -->usric26@gmail.com</p>
+  <p><strong>Wozu:</strong> Die Antworten fließen ausschließlich in die Gestaltung der App und in meine Seminararbeit ein.</p>
+  <p><strong>Was:</strong> Nur deine Antworten. Ich frage nicht nach deinem Namen, und in der Datenbank wird keine IP-Adresse gespeichert. Eine freiwillige Kontaktangabe für spätere Tests wird getrennt von den Antworten gespeichert und lässt sich ihnen nicht zuordnen.</p>
+  <p><strong>Wo:</strong> Die Seite läuft bei Vercel; die Datenverarbeitung erfolgt in Frankfurt. Die Antworten liegen in einer Datenbank bei Neon, ebenfalls in Frankfurt. Beim Aufruf der Seite verarbeitet der Hosting-Anbieter technisch bedingt deine IP-Adresse.</p>
+  <p><strong>Wie lange:</strong> Bis zur Bewertung der Seminararbeit, danach werden alle Daten gelöscht.</p>
+  <p><strong>Freiwillig:</strong> Du kannst jederzeit abbrechen. Vor dem Absenden wird nichts gespeichert.</p>
+  <form method="dialog"><button class="btn">Schließen</button></form>
+</dialog>
+</body>
+</html>

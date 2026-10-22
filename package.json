@@ -1,0 +1,13 @@
+{
+  "name": "fingerzeig-umfrage",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Online-Umfrage zum Studienprojekt Fingerzeig (Kochen mit Handgesten)",
+  "scripts": {
+    "test": "node --test"
+  },
+  "dependencies": {
+    "@neondatabase/serverless": "^1.2.0"
+  }
+}
