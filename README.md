@@ -102,3 +102,8 @@ passende Datei aus `migrations/` in Neon ausgeführt wurde.
   jeder Auswahl. Mit `prefers-reduced-motion` entfallen alle Animationen; Blasen und Dampf stehen dann statisch.
 - **Häkchen:** Neben einer beantworteten Frage zeichnet sich ein Häkchen, nur für die Änderung, die sie beantwortet hat.
   Vibration (8 ms) nur, wo der Browser sie unterstützt (nicht iOS).
+- **Fortsetzen:** Der Fortschritt liegt im `localStorage` dieses Browsers (nicht auf dem Server) und verfällt nach 14 Tagen.
+  Ein Reload im selben Tab macht direkt weiter; wer später zurückkommt, sieht „Schön, dass du zurück bist“ mit
+  „Weitermachen“ oder „Neu beginnen“ (zweiter Klick zur Bestätigung). Der Datenschutztext nennt das Zwischenspeichern.
+- **Noch einmal teilnehmen:** Die Danke-Seite hat den Button „Noch einmal teilnehmen“ (z. B. für eine zweite Person am
+  selben Gerät). Er löscht den Merker „fertig“ und beginnt mit einer neuen `submission_id`.
