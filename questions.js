@@ -1,10 +1,13 @@
 // Single source of truth for the survey: used by the browser (app.js)
 // and by the server-side validation (api/_validate.js).
 
-export const SCHEMA_VERSION = 1;
+export const SCHEMA_VERSION = 2;
 
 export const TEXT_MAX = 600;
 export const CONTACT_MAX = 120;
+export const RATING_MIN = 1;
+export const RATING_MAX = 5;
+export const DURATION_MAX_S = 86_400;
 
 export const COOKING = {
   frequency: {

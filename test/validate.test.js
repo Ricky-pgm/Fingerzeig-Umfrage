@@ -11,7 +11,7 @@ const valid = () => ({
       dirtyHandsOther: '', actionsOther: '', annoyance: 'Bildschirm geht aus',
     },
     gestures: ['next', 'back', 'timer', 'ingredients', 'pause'].map((action, i) => ({
-      action, position: i + 1, hand: 'open_palm', motion: 'swipe_left', note: '',
+      action, position: i + 1, hand: 'open_palm', motion: 'swipe_left', note: '', fit: 4, ease: 5,
     })),
     accidental: '',
     about: { age: '25_39', handedness: 'right', experience: ['voice'] },
@@ -19,6 +19,8 @@ const valid = () => ({
   },
   contact: '',
   website: '',
+  submissionId: '3f2b8c1e-5a4d-4e6f-9b7a-1c2d3e4f5a6b',
+  durationS: 480,
 });
 
 test('accepts a complete submission', () => {
@@ -75,4 +77,36 @@ test('rejects the honeypot and over-long text', () => {
 test('trims and keeps an optional contact', () => {
   const b = valid(); b.contact = '  mail@example.org ';
   assert.equal(validateSubmission(b).contact, 'mail@example.org');
+});
+
+test('requires a valid submission id and duration', () => {
+  for (const id of [undefined, 'abc', 42, '3f2b8c1e-5a4d-0e6f-9b7a-1c2d3e4f5a6b']) {
+    const b = valid(); b.submissionId = id;
+    assert.throws(() => validateSubmission(b), `id ${id}`);
+  }
+  for (const d of [undefined, -1, 1.5, '480', 86_401]) {
+    const b = valid(); b.durationS = d;
+    assert.throws(() => validateSubmission(b), `duration ${d}`);
+  }
+  const ok = valid(); ok.submissionId = ok.submissionId.toUpperCase();
+  assert.equal(validateSubmission(ok).submissionId, '3f2b8c1e-5a4d-4e6f-9b7a-1c2d3e4f5a6b');
+});
+
+test('requires both ratings as whole numbers from 1 to 5', () => {
+  for (const key of ['fit', 'ease']) {
+    for (const v of [undefined, 0, 6, 2.5, '3', null]) {
+      const b = valid(); b.answers.gestures[2][key] = v;
+      assert.throws(() => validateSubmission(b), `${key} ${v}`);
+    }
+  }
+  const b = valid(); b.answers.gestures[0].fit = 1; b.answers.gestures[0].ease = 5;
+  const out = validateSubmission(b);
+  assert.deepEqual([out.answers.gestures[0].fit, out.answers.gestures[0].ease], [1, 5]);
+});
+
+test('rejects repeated or out-of-range positions', () => {
+  const b = valid(); b.answers.gestures[1].position = 1;
+  assert.throws(() => validateSubmission(b));
+  const c = valid(); c.answers.gestures[4].position = 6;
+  assert.throws(() => validateSubmission(c));
 });
