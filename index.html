@@ -17,7 +17,16 @@
   <div class="bar-inner">
     <span class="brand">Fingerzeig</span>
     <div class="progress" role="progressbar" aria-label="Fortschritt" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" hidden>
-      <div class="progress-fill"></div>
+      <span class="progress-text" aria-hidden="true"></span>
+      <svg class="pot" viewBox="0 0 64 56" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+        <clipPath id="pot-clip"><path d="M10 22h44v20a8 8 0 0 1-8 8H18a8 8 0 0 1-8-8z"/></clipPath>
+        <g clip-path="url(#pot-clip)"><rect class="water" x="10" y="22" width="44" height="28" fill="#F2A65A" stroke="none"/>
+          <circle class="bubble b1" cx="24" cy="44" r="2.5" fill="#F4EFE6" stroke="none"/>
+          <circle class="bubble b2" cx="34" cy="44" r="2" fill="#F4EFE6" stroke="none"/>
+          <circle class="bubble b3" cx="44" cy="44" r="2.5" fill="#F4EFE6" stroke="none"/></g>
+        <path d="M10 22v20a8 8 0 0 0 8 8h28a8 8 0 0 0 8-8V22M7 20h50M27 15h10M10 30H4M54 30h6"/>
+        <path class="steam s1" d="M24 11c-3-3 3-5 0-9"/><path class="steam s2" d="M32 11c-3-3 3-5 0-9"/><path class="steam s3" d="M40 11c-3-3 3-5 0-9"/>
+      </svg>
     </div>
   </div>
 </header>
