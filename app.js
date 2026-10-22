@@ -6,16 +6,18 @@ import { tileOrder } from './tiles.js';
 
 const STORE_KEY = 'fingerzeig-umfrage-v3';
 const DONE_KEY = 'fingerzeig-umfrage-done';
+const TAB_KEY = 'fingerzeig-umfrage-tab';
+const MAX_AGE_MS = 14 * 24 * 60 * 60 * 1000;
 
 // ---------- storage (per viewer convenience only, may be unavailable) ----------
 const store = {
-  get(key, storage = sessionStorage) {
+  get(key, storage = localStorage) {
     try { return JSON.parse(storage.getItem(key)); } catch { return null; }
   },
-  set(key, value, storage = sessionStorage) {
+  set(key, value, storage = localStorage) {
     try { storage.setItem(key, JSON.stringify(value)); } catch { /* ignore */ }
   },
-  remove(key, storage = sessionStorage) {
+  remove(key, storage = localStorage) {
     try { storage.removeItem(key); } catch { /* ignore */ }
   },
 };
@@ -56,8 +58,23 @@ function freshState() {
   };
 }
 
-let state = store.get(STORE_KEY) || freshState();
-const save = () => store.set(STORE_KEY, state);
+// Progress stays in this browser (not on the server) so a closed tab can be resumed; it expires after 14 days.
+const savedState = store.get(STORE_KEY);
+const usable = savedState && Date.now() - (savedState.savedAt ?? 0) < MAX_AGE_MS;
+let state = usable ? savedState : freshState();
+const reopened = !store.get(TAB_KEY, sessionStorage);
+store.set(TAB_KEY, true, sessionStorage);
+// A reload in the same tab continues directly; a returning visit gets the choice to resume or start over.
+let resumeOffer = usable && reopened && state.step > 0 ? state.step : null;
+const save = () => { state.savedAt = Date.now(); store.set(STORE_KEY, state); };
+
+function restart() {
+  store.remove(STORE_KEY);
+  store.remove(DONE_KEY);
+  state = freshState();
+  resumeOffer = null;
+  go(0);
+}
 
 // ---------- tiny DOM helper ----------
 function el(tag, attrs = {}, ...children) {
@@ -259,7 +276,38 @@ const arc = () => {
   return svg;
 };
 
+const heroBlock = () => el('section', { class: 'hero' }, arc(),
+  el('p', { class: 'pill' }, 'Studienprojekt · FOM'),
+  el('h1', {}, 'Schon wieder Teig am ', el('span', { class: 'accent' }, 'Display?')),
+  el('p', { class: 'lead' }, 'Ich baue eine Koch-App, die du ohne Touch steuerst.'));
+
+function resumeView() {
+  let armed = false;
+  const status = el('p', { class: 'hint', role: 'status' });
+  const reset = el('button', {
+    type: 'button', class: 'btn ghost',
+    onclick: () => {
+      if (!armed) {
+        armed = true;
+        reset.textContent = 'Ja, löschen';
+        status.textContent = 'Bitte noch einmal bestätigen: Deine bisherigen Antworten werden gelöscht.';
+        return;
+      }
+      restart();
+    },
+  }, 'Neu beginnen');
+  return [
+    heroBlock(),
+    el('h2', {}, 'Schön, dass du zurück bist.'),
+    el('p', {}, `Du warst bei Frage ${resumeOffer} von ${LAST_QUESTION}. Deine bisherigen Antworten sind nur in diesem Browser gespeichert.`),
+    status,
+    el('div', { class: 'nav' }, reset,
+      el('button', { type: 'button', class: 'btn accent', onclick: () => go(resumeOffer) }, 'Weitermachen')),
+  ];
+}
+
 function welcome() {
+  if (resumeOffer) return resumeView();
   const consent = el('input', {
     type: 'checkbox', id: 'consent', checked: state.consent,
     onchange: (e) => { state.consent = e.target.checked; save(); },
@@ -269,10 +317,7 @@ function welcome() {
       el('span', {}, 'Ich bin einverstanden, dass meine Antworten anonym für das Projekt genutzt werden. ',
         el('button', { type: 'button', class: 'link', onclick: openPrivacy }, 'Datenschutz lesen'))));
   return [
-    el('section', { class: 'hero' }, arc(),
-      el('p', { class: 'pill' }, 'Studienprojekt · FOM'),
-      el('h1', {}, 'Schon wieder Teig am ', el('span', { class: 'accent' }, 'Display?')),
-      el('p', { class: 'lead' }, 'Ich baue eine Koch-App, die du ohne Touch steuerst.')),
+    heroBlock(),
     el('p', { class: 'timeline' }, 'Dauert so lange, wie Nudelwasser zum Kochen braucht (ca. 8 Min.)'),
     el('h2', {}, 'Zeig mir, wie’s geht.'),
     el('p', {}, 'Hilf mir herauszufinden, welche Gesten sich für dich richtig anfühlen.'),
@@ -423,7 +468,9 @@ function thanks() {
     el('div', { class: 'big' }, 'Danke!'),
     el('h2', {}, 'Deine Antworten sind angekommen.'),
     el('p', { class: 'lead' }, 'Sie helfen mir, Gesten zu gestalten, die sich natürlich anfühlen. Wenn du Leute kennst, die gern kochen: Teil den Link gern weiter.'),
-    share)];
+    share,
+    el('p', { class: 'hint' }, 'Eine zweite Person am selben Gerät?'),
+    el('button', { type: 'button', class: 'btn ghost', onclick: restart }, 'Noch einmal teilnehmen'))];
 }
 
 const STEPS = [
@@ -492,8 +539,9 @@ const progressText = document.querySelector('.progress-text');
 function render() {
   const scrollY = window.scrollY;
   const focusKey = document.activeElement?.dataset?.key;
-  app.replaceChildren(...STEPS[state.step]().filter(Boolean));
-  const inQuestions = state.step > 0 && state.step <= LAST_QUESTION;
+  const current = resumeOffer ? 0 : state.step;
+  app.replaceChildren(...STEPS[current]().filter(Boolean));
+  const inQuestions = current > 0 && current <= LAST_QUESTION;
   progress.hidden = !inQuestions;
   const pct = Math.round((Math.min(state.step, LAST_QUESTION) / LAST_QUESTION) * 100);
   progress.setAttribute('aria-valuenow', String(pct));
@@ -508,6 +556,7 @@ function render() {
 
 function go(step) {
   const back = step < state.step;
+  resumeOffer = null;
   state.step = Math.max(0, Math.min(step, STEPS.length - 1));
   save();
   app.classList.remove('enter', 'enter-back');
@@ -521,5 +570,8 @@ function go(step) {
 function openPrivacy() { document.getElementById('privacy').showModal(); }
 document.getElementById('privacy-open').addEventListener('click', openPrivacy);
 
-if (store.get(DONE_KEY, localStorage)) state.step = STEPS.length - 1;
+if (store.get(DONE_KEY)) {
+  resumeOffer = null;
+  state.step = STEPS.length - 1;
+}
 render();

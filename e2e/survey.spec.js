@@ -69,7 +69,8 @@ test('keeps the progress after a reload', async ({ page }) => {
 test('shows an error and allows a retry when sending fails', async ({ page }) => {
   await page.route('**/api/submit', (route) => route.fulfill({ status: 500, body: '{}' }));
   await page.addInitScript(() => {
-    sessionStorage.setItem('fingerzeig-umfrage-v3', JSON.stringify({
+    sessionStorage.setItem('fingerzeig-umfrage-tab', 'true');
+    localStorage.setItem('fingerzeig-umfrage-v3', JSON.stringify({ savedAt: Date.now(),
       step: 12, consent: true,
       cooking: { dirtyHands: ['wash'], actions: ['next'], dirtyHandsOther: '', actionsOther: '', annoyance: '', frequency: 'weekly', device: 'phone', position: 'flat', distance: 'lt50' },
       order: ['next', 'back', 'timer', 'ingredients', 'pause'],
@@ -212,7 +213,8 @@ for (const [step, state, valuetext] of [[9, 'boil', 'Frage 9 von 12'], [12, 'ste
   test(`the pot is in state "${state}" at step ${step}`, async ({ page }) => {
     await page.addInitScript((at) => {
       const gestures = Object.fromEntries(['next', 'back', 'timer', 'ingredients', 'pause'].map((a) => [a, { hand: 'fist', motion: 'still', note: '', fit: 3, ease: 3 }]));
-      sessionStorage.setItem('fingerzeig-umfrage-v3', JSON.stringify({
+      sessionStorage.setItem('fingerzeig-umfrage-tab', 'true');
+    localStorage.setItem('fingerzeig-umfrage-v3', JSON.stringify({ savedAt: Date.now(),
         step: at, consent: true, submissionId: '3f2b8c1e-5a4d-4e6f-9b7a-1c2d3e4f5a6b', startedAt: 1,
         cooking: { dirtyHands: ['wash'], actions: ['next'], dirtyHandsOther: '', actionsOther: '', annoyance: '', frequency: 'weekly', device: 'phone', position: 'flat', distance: 'lt50' },
         order: Object.keys(gestures), tiles: { hand: ['open_palm', 'fist', 'point', 'thumb_up', 'thumb_down', 'victory', 'pinch', 'other'], motion: ['still', 'swipe_left', 'swipe_right', 'swipe_up', 'swipe_down', 'circle', 'tap', 'other'] },
@@ -224,3 +226,44 @@ for (const [step, state, valuetext] of [[9, 'boil', 'Frage 9 von 12'], [12, 'ste
     await expect(page.getByRole('progressbar')).toHaveAttribute('aria-valuetext', valuetext);
   });
 }
+
+const savedAt3 = () => ({
+  savedAt: Date.now(), step: 3, consent: true, submissionId: '3f2b8c1e-5a4d-4e6f-9b7a-1c2d3e4f5a6b', startedAt: 1,
+  cooking: { dirtyHands: ['wash'], actions: [], dirtyHandsOther: '', actionsOther: '', annoyance: '', frequency: 'weekly', device: 'tablet', position: 'flat', distance: 'lt50' },
+  order: ['next', 'back', 'timer', 'ingredients', 'pause'],
+  tiles: { hand: ['open_palm', 'fist', 'point', 'thumb_up', 'thumb_down', 'victory', 'pinch', 'other'], motion: ['still', 'swipe_left', 'swipe_right', 'swipe_up', 'swipe_down', 'circle', 'tap', 'other'] },
+  gestures: {}, accidental: '', about: { experience: [] }, comment: '', contact: '', website: '',
+});
+
+test('offers to resume after the browser was closed, and continues where it stopped', async ({ page }) => {
+  await page.addInitScript((saved) => { if (!localStorage.getItem('fingerzeig-umfrage-v3')) localStorage.setItem('fingerzeig-umfrage-v3', JSON.stringify(saved)); }, savedAt3());
+  await page.goto('/');
+  await expect(page.getByText('Du warst bei Frage 3 von 12.')).toBeVisible();
+  await page.getByRole('button', { name: 'Weitermachen' }).click();
+  await expect(page.getByRole('heading', { name: 'Was tust du am Gerät?' })).toBeVisible();
+});
+
+test('starting over needs a second click and then clears the saved answers', async ({ page }) => {
+  await page.addInitScript((saved) => { if (!localStorage.getItem('fingerzeig-umfrage-v3')) localStorage.setItem('fingerzeig-umfrage-v3', JSON.stringify(saved)); }, savedAt3());
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Neu beginnen' }).click();
+  await expect(page.getByRole('status')).toContainText('noch einmal bestätigen');
+  await page.getByRole('button', { name: 'Ja, löschen' }).click();
+  await expect(page.getByRole('button', { name: /Los geht/ })).toBeVisible();
+  await expect(page.getByLabel(/einverstanden/)).not.toBeChecked();
+});
+
+test('lets a second person take part after the first one submitted', async ({ page }) => {
+  await page.addInitScript(() => {
+    if (sessionStorage.getItem('seeded')) return;
+    sessionStorage.setItem('seeded', 'true');
+    localStorage.setItem('fingerzeig-umfrage-done', 'true');
+  });
+  await page.goto('/');
+  await expect(page.getByRole('heading', { name: 'Deine Antworten sind angekommen.' })).toBeVisible();
+  await page.getByRole('button', { name: 'Noch einmal teilnehmen' }).click();
+  await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+  await expect(page.getByRole('button', { name: /Los geht/ })).toBeVisible();
+  await page.reload();
+  await expect(page.getByRole('button', { name: /Los geht/ })).toBeVisible();
+});

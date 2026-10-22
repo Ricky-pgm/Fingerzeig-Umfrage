@@ -147,3 +147,6 @@ legend .tick{display:none;width:20px;height:20px;margin-left:8px;vertical-align:
   .arc-draw{stroke-dashoffset:0}
   .arc-head{opacity:1}
 }
+
+.done .btn{width:100%;margin-top:12px}
+.done .hint{margin:22px 0 0}
