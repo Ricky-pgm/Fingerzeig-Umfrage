@@ -2,7 +2,7 @@ import {
   ABOUT, CONTACT_MAX, COOKING, GESTURE_ACTIONS, HAND_SHAPES, MOTIONS, TEXT_MAX,
 } from './questions.js';
 
-const STORE_KEY = 'fingerzeig-umfrage-v1';
+const STORE_KEY = 'fingerzeig-umfrage-v2';
 const DONE_KEY = 'fingerzeig-umfrage-done';
 
 // ---------- storage (per viewer convenience only, may be unavailable) ----------
@@ -27,9 +27,20 @@ function shuffled(list) {
   return a;
 }
 
+function uuid() {
+  if (crypto.randomUUID) return crypto.randomUUID();
+  const b = crypto.getRandomValues(new Uint8Array(16));
+  b[6] = (b[6] & 0x0f) | 0x40;
+  b[8] = (b[8] & 0x3f) | 0x80;
+  const h = [...b].map((x) => x.toString(16).padStart(2, '0')).join('');
+  return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`;
+}
+
 function freshState() {
   return {
     step: 0,
+    submissionId: uuid(),
+    startedAt: null,
     consent: false,
     cooking: { dirtyHands: [], actions: [], dirtyHandsOther: '', actionsOther: '', annoyance: '' },
     order: shuffled(GESTURE_ACTIONS.map((g) => g[0])),
@@ -133,7 +144,7 @@ function welcome() {
     type: 'checkbox', id: 'consent', checked: state.consent,
     onchange: (e) => { state.consent = e.target.checked; save(); start.disabled = !state.consent; },
   });
-  const start = el('button', { type: 'button', class: 'btn accent', disabled: !state.consent, onclick: () => go(1) }, 'Los geht’s');
+  const start = el('button', { type: 'button', class: 'btn accent', disabled: !state.consent, onclick: () => { state.startedAt ??= Date.now(); go(1); } }, 'Los geht’s');
   return [
     el('section', { class: 'hero' }, arc(),
       el('p', { class: 'eyebrow' }, 'Studienprojekt · FOM Hochschule'),
@@ -300,12 +311,15 @@ async function submit(button, error) {
     },
     contact: state.contact,
     website: state.website,
+    submissionId: state.submissionId,
+    durationS: Math.min(86_400, Math.max(0, Math.round((Date.now() - (state.startedAt ?? Date.now())) / 1000))),
   };
   try {
     const res = await fetch('/api/submit', {
       method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
     });
-    if (res.status !== 201) throw new Error(String(res.status));
+    // 200 means the server already has this submission (a retry after a lost reply).
+    if (res.status !== 201 && res.status !== 200) throw new Error(String(res.status));
     store.remove(STORE_KEY);
     store.set(DONE_KEY, true, localStorage);
     go(STEPS.length - 1);

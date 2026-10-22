@@ -66,7 +66,7 @@ test('keeps the progress after a reload', async ({ page }) => {
 test('shows an error and allows a retry when sending fails', async ({ page }) => {
   await page.route('**/api/submit', (route) => route.fulfill({ status: 500, body: '{}' }));
   await page.addInitScript(() => {
-    sessionStorage.setItem('fingerzeig-umfrage-v1', JSON.stringify({
+    sessionStorage.setItem('fingerzeig-umfrage-v2', JSON.stringify({
       step: 13, consent: true,
       cooking: { dirtyHands: ['wash'], actions: ['next'], dirtyHandsOther: '', actionsOther: '', annoyance: '', frequency: 'weekly', device: 'phone', position: 'flat', distance: 'lt50' },
       order: ['next', 'back', 'timer', 'ingredients', 'pause'],
