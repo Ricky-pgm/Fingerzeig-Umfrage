@@ -7,14 +7,14 @@ import { fileURLToPath } from 'node:url';
 const root = fileURLToPath(new URL('..', import.meta.url));
 const config = JSON.parse(await readFile(join(root, 'vercel.json'), 'utf8'));
 const headers = Object.fromEntries(config.headers[0].headers.map((h) => [h.key, h.value]));
-const types = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.woff2': 'font/woff2' };
+const types = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.svg': 'image/svg+xml', '.woff2': 'font/woff2' };
 const port = Number(process.env.PORT || 4173);
 
 createServer(async (req, res) => {
   const path = new URL(req.url, 'http://localhost').pathname;
   const file = normalize(path === '/' ? '/index.html' : path);
   // Same files Vercel serves: the top-level page files and fonts, not config or tests (see .vercelignore).
-  const allowed = (/^\/[\w-]+\.(html|js|css)$/.test(file) && file !== '/playwright.config.js') || file.startsWith('/fonts/');
+  const allowed = (/^\/[\w-]+\.(html|js|css|svg)$/.test(file) && file !== '/playwright.config.js') || file.startsWith('/fonts/');
   if (!allowed) { res.writeHead(404, headers).end(); return; }
   try {
     const body = await readFile(join(root, file));
