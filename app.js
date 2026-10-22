@@ -1,6 +1,7 @@
 import {
   ABOUT, CONTACT_MAX, COOKING, GESTURE_ACTIONS, HAND_SHAPES, MOTIONS, RATINGS, TEXT_MAX,
 } from './questions.js';
+import { HAND_ICONS, MOTION_ICONS } from './icons.js';
 
 const STORE_KEY = 'fingerzeig-umfrage-v2';
 const DONE_KEY = 'fingerzeig-umfrage-done';
@@ -77,10 +78,32 @@ let uid = 0;
 const nextId = (p) => `${p}-${uid += 1}`;
 
 // ---------- reusable inputs ----------
-function choiceGroup(question, current, onChange, { tiles = false, cols = '' } = {}) {
+const SVG_NS = 'http://www.w3.org/2000/svg';
+
+function pictogram(parts) {
+  const svg = document.createElementNS(SVG_NS, 'svg');
+  svg.setAttribute('viewBox', '0 0 48 48');
+  svg.setAttribute('class', 'pic');
+  svg.setAttribute('aria-hidden', 'true');
+  svg.setAttribute('fill', 'none');
+  svg.setAttribute('stroke', 'currentColor');
+  svg.setAttribute('stroke-width', '3');
+  svg.setAttribute('stroke-linecap', 'round');
+  svg.setAttribute('stroke-linejoin', 'round');
+  for (const part of parts) {
+    const path = document.createElementNS(SVG_NS, 'path');
+    path.setAttribute('d', part.d);
+    if (part.fill) path.setAttribute('fill', 'currentColor');
+    if (part.transform) path.setAttribute('transform', part.transform);
+    svg.append(path);
+  }
+  return svg;
+}
+
+function choiceGroup(question, current, onChange, { tiles = false, cols = '', icons = null } = {}) {
   const name = nextId('q');
   const type = question.multi ? 'checkbox' : 'radio';
-  const options = question.options.map(([value, label, icon]) => {
+  const options = question.options.map(([value, label]) => {
     const checked = question.multi ? current.includes(value) : current === value;
     const input = el('input', {
       type, name, value, checked,
@@ -93,11 +116,7 @@ function choiceGroup(question, current, onChange, { tiles = false, cols = '' } =
       },
     });
     const body = tiles
-      ? el('span', {},
-        icon && icon.length <= 2 && /\p{Extended_Pictographic}/u.test(icon)
-          ? el('span', { class: 'icon', 'aria-hidden': 'true' }, icon)
-          : el('span', { class: 'sym', 'aria-hidden': 'true' }, icon),
-        el('small', {}, label))
+      ? el('span', {}, pictogram(icons[value]), el('small', {}, label))
       : el('span', {}, el('span', { class: 'check', 'aria-hidden': 'true' }), label);
     return el('label', { class: `opt${tiles ? ' tile' : ''}` }, input, body);
   });
@@ -218,9 +237,9 @@ function gestureStep(index) {
       el('p', { class: 'eyebrow' }, `Geste ${index + 1} von ${GESTURE_ACTIONS.length}`),
       el('div', { class: 'card scenario' }, el('span', { class: 'tag' }, title), el('p', {}, situation)),
       choiceGroup({ label: 'Wie hältst du deine Hand?', options: HAND_SHAPES }, g.hand,
-        (v) => { g.hand = v; save(); render(); }, { tiles: true, cols: 'grid grid4' }),
+        (v) => { g.hand = v; save(); render(); }, { tiles: true, cols: 'grid grid4', icons: HAND_ICONS }),
       choiceGroup({ label: 'Wie bewegst du sie?', hint: 'Richtungen aus deiner Sicht', options: MOTIONS }, g.motion,
-        (v) => { g.motion = v; save(); render(); }, { tiles: true, cols: 'grid grid4' }),
+        (v) => { g.motion = v; save(); render(); }, { tiles: true, cols: 'grid grid4', icons: MOTION_ICONS }),
       scaleGroup(RATINGS.fit, g.fit, (v) => { g.fit = v; refresh(); }),
       scaleGroup(RATINGS.ease, g.ease, (v) => { g.ease = v; refresh(); }),
       textArea(needsNote() ? 'Beschreib deine Geste kurz' : 'Möchtest du etwas zu deiner Geste sagen?', g.note,
