@@ -76,3 +76,6 @@ passende Datei aus `migrations/` in Neon ausgeführt wurde.
 - **Reihenfolge der Aktionen:** zufällig je Person, ohne Ausgleichsverfahren (Zufall genügt).
 - **Seiten:** Die ersten beiden Koch-Seiten sind zusammengelegt, um die Zeit für die zwei Skalen je Geste
   auszugleichen. Der Freitext „Was nervt?“ bleibt, er ersetzt die Interviews.
+- **Bausteine der Geste:** Handform und Bewegung sind neutrale Linien-Piktogramme (`icons.js`, reine Pfaddaten),
+  keine Emoji, die je Gerät anders aussehen. Die Reihenfolge der Kacheln wird je Person zufällig gemischt und
+  bleibt für alle fünf Gesten gleich; „Andere“ steht immer zuletzt (`tiles.js`).
