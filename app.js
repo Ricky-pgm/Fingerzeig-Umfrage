@@ -1,5 +1,5 @@
 import {
-  ABOUT, CONTACT_MAX, COOKING, GESTURE_ACTIONS, HAND_SHAPES, MOTIONS, TEXT_MAX,
+  ABOUT, CONTACT_MAX, COOKING, GESTURE_ACTIONS, HAND_SHAPES, MOTIONS, RATINGS, TEXT_MAX,
 } from './questions.js';
 
 const STORE_KEY = 'fingerzeig-umfrage-v2';
@@ -107,6 +107,20 @@ function choiceGroup(question, current, onChange, { tiles = false, cols = '' } =
     el('div', { class: `options ${cols}` }, options));
 }
 
+function scaleGroup({ label, low, high }, current, onChange) {
+  const name = nextId('s');
+  const options = [1, 2, 3, 4, 5].map((n) => el('label', { class: 'opt scale' },
+    el('input', {
+      type: 'radio', name, value: String(n), checked: current === n, onchange: () => onChange(n),
+      'aria-label': n === 1 ? `1, ${low}` : n === 5 ? `5, ${high}` : String(n),
+    }),
+    el('span', {}, String(n))));
+  return el('fieldset', {},
+    el('legend', {}, label),
+    el('div', { class: 'options scale-row' }, options),
+    el('div', { class: 'scale-ends', 'aria-hidden': 'true' }, el('span', {}, low), el('span', {}, high)));
+}
+
 function textArea(labelText, value, onInput, { optional = true, rows = 4, max = TEXT_MAX, single = false } = {}) {
   const id = nextId('t');
   const counter = el('div', { class: 'counter', 'aria-live': 'polite' }, `${value.length}/${max}`);
@@ -195,9 +209,9 @@ function gestureStep(index) {
   return () => {
     const actionId = state.order[index];
     const [, title, situation] = GESTURE_ACTIONS.find((g) => g[0] === actionId);
-    const g = state.gestures[actionId] ?? (state.gestures[actionId] = { hand: '', motion: '', note: '' });
+    const g = state.gestures[actionId] ?? (state.gestures[actionId] = { hand: '', motion: '', note: '', fit: 0, ease: 0 });
     const needsNote = () => g.hand === 'other' || g.motion === 'other';
-    const done = () => g.hand && g.motion && (!needsNote() || g.note.trim().length >= 3);
+    const done = () => g.hand && g.motion && g.fit && g.ease && (!needsNote() || g.note.trim().length >= 3);
     const refresh = () => { save(); navEl.querySelector('.btn:last-child').disabled = !done(); };
     const navEl = nav({ canNext: done(), onNext: () => go(state.step + 1) });
     return [
@@ -207,6 +221,8 @@ function gestureStep(index) {
         (v) => { g.hand = v; save(); render(); }, { tiles: true, cols: 'grid grid4' }),
       choiceGroup({ label: 'Wie bewegst du sie?', hint: 'Richtungen aus deiner Sicht', options: MOTIONS }, g.motion,
         (v) => { g.motion = v; save(); render(); }, { tiles: true, cols: 'grid grid4' }),
+      scaleGroup(RATINGS.fit, g.fit, (v) => { g.fit = v; refresh(); }),
+      scaleGroup(RATINGS.ease, g.ease, (v) => { g.ease = v; refresh(); }),
       textArea(needsNote() ? 'Beschreib deine Geste kurz' : 'Möchtest du etwas zu deiner Geste sagen?', g.note,
         (v) => { g.note = v; refresh(); }, { optional: !needsNote(), rows: 2, max: 300 }),
       navEl,
@@ -274,8 +290,7 @@ function thanks() {
 
 const STEPS = [
   welcome,
-  cookingStep(['frequency', 'device'], 'Wie kochst du?'),
-  cookingStep(['position', 'distance'], 'Wo steht dein Gerät?'),
+  cookingStep(['frequency', 'device', 'position', 'distance'], 'Wie kochst du?'),
   cookingStep(['dirtyHands'], 'Und mit schmutzigen Händen?', {
     rerenderOn: ['dirtyHands'],
     valid: () => !state.cooking.dirtyHands.includes('other') || state.cooking.dirtyHandsOther.trim().length >= 3,

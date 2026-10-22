@@ -141,4 +141,9 @@ export const ABOUT = {
   },
 };
 
+export const RATINGS = {
+  fit: { label: 'Wie gut passt diese Geste zur Aktion?', low: 'passt gar nicht', high: 'passt sehr gut' },
+  ease: { label: 'Wie leicht ist sie auszuführen?', low: 'sehr schwer', high: 'sehr leicht' },
+};
+
 export const values = (options) => options.map((o) => o[0]);
