@@ -53,7 +53,13 @@ h2{font:800 clamp(26px,6.5vw,34px)/1.08 "Bricolage",sans-serif;letter-spacing:-.
 .lead{font-size:19px;line-height:1.5;margin:0 0 20px}
 .muted{color:var(--muted)}
 
-.hero{background:var(--green);color:#F4EFE6;border-radius:28px;padding:118px 24px 26px;margin-bottom:22px;position:relative;overflow:hidden}
+.hero{background:
+  radial-gradient(circle,rgba(255,255,255,.2) 0 1px,transparent 1.6px) 0 0/37px 41px,
+  radial-gradient(circle,rgba(255,255,255,.14) 0 1px,transparent 1.6px) 11px 17px/53px 47px,
+  repeating-linear-gradient(90deg,#3b2418 0 22px,#2c1a10 22px 24px,#42291a 24px 49px,#33200f 49px 51px);
+  color:#F4EFE6;border-radius:28px;padding:118px 24px 28px;margin-bottom:18px;position:relative;overflow:hidden}
+.pill{display:inline-block;margin:0 0 16px;padding:6px 14px;border:1px solid rgba(244,239,230,.45);border-radius:99px;font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#E6DFD1}
+.hero h1 .accent{color:var(--saffron)}
 .hero h1{color:#F4EFE6}
 .hero .lead{color:#E6DFD1;margin:0}
 .hero svg{position:absolute;right:22px;top:20px;width:150px;opacity:.95}
@@ -68,7 +74,6 @@ h2{font:800 clamp(26px,6.5vw,34px)/1.08 "Bricolage",sans-serif;letter-spacing:-.
 
 .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:20px;margin:0 0 18px}
 .card.tight{padding:16px}
-.hero .eyebrow{color:#CFC7B6}
 .scenario{background:var(--saffron-soft);border:0}
 .scenario .tag{display:inline-block;font:700 15px/1 "Bricolage",sans-serif;background:var(--green);color:#F4EFE6;border-radius:99px;padding:8px 14px;margin-bottom:10px}
 .scenario p{margin:0;font-size:19px}

@@ -270,10 +270,12 @@ function welcome() {
         el('button', { type: 'button', class: 'link', onclick: openPrivacy }, 'Datenschutz lesen'))));
   return [
     el('section', { class: 'hero' }, arc(),
-      el('p', { class: 'eyebrow' }, 'Studienprojekt · FOM Hochschule'),
-      el('h1', {}, 'Hände voller Teig. Und jetzt?'),
-      el('p', { class: 'lead' }, 'Ich entwickle „Fingerzeig“, eine Koch-App, die du mit der Hand vor der Kamera steuerst, ohne das Display anzufassen. Hilf mir herauszufinden, welche Gesten sich für dich richtig anfühlen.')),
+      el('p', { class: 'pill' }, 'Studienprojekt · FOM'),
+      el('h1', {}, 'Schon wieder Teig am ', el('span', { class: 'accent' }, 'Display?')),
+      el('p', { class: 'lead' }, 'Ich baue eine Koch-App, die du ohne Touch steuerst.')),
     el('p', { class: 'timeline' }, 'Dauert so lange, wie Nudelwasser zum Kochen braucht (ca. 8 Min.)'),
+    el('h2', {}, 'Zeig mir, wie’s geht.'),
+    el('p', {}, 'Hilf mir herauszufinden, welche Gesten sich für dich richtig anfühlen.'),
     el('ul', { class: 'facts' }, el('li', {}, 'anonym'), el('li', {}, 'keine richtigen oder falschen Antworten')),
     consentField,
     nav({
