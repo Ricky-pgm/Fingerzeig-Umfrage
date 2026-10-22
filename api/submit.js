@@ -1,5 +1,6 @@
 import { neon } from '@neondatabase/serverless';
 import { validateSubmission } from './_validate.js';
+import { databaseUrl } from './_env.js';
 
 const MAX_BODY_BYTES = 20_000;
 
@@ -25,7 +26,7 @@ export default async function handler(req, res) {
     return res.status(422).json({ error: 'invalid_submission' });
   }
 
-  const url = process.env.DATABASE_URL || process.env.POSTGRES_URL;
+  const url = databaseUrl();
   if (!url) return res.status(503).json({ error: 'not_configured' });
 
   try {
