@@ -108,7 +108,7 @@ function choiceGroup(question, current, onChange, { tiles = false, cols = '', ic
   const options = question.options.map(([value, label]) => {
     const checked = question.multi ? current.includes(value) : current === value;
     const input = el('input', {
-      type, name, value, checked,
+      type, name, value, checked, 'data-key': `${question.label}|${value}`,
       onchange: (e) => {
         if (question.multi) {
           const set = new Set(current);
@@ -133,6 +133,7 @@ function scaleGroup({ label, low, high }, current, onChange) {
   const options = [1, 2, 3, 4, 5].map((n) => el('label', { class: 'opt scale' },
     el('input', {
       type: 'radio', name, value: String(n), checked: current === n, onchange: () => onChange(n),
+      'data-key': `${label}|${n}`,
       'aria-label': n === 1 ? `1, ${low}` : n === 5 ? `5, ${high}` : String(n),
     }),
     el('span', {}, String(n))));
@@ -144,72 +145,130 @@ function scaleGroup({ label, low, high }, current, onChange) {
 
 function textArea(labelText, value, onInput, { optional = true, rows = 4, max = TEXT_MAX, single = false } = {}) {
   const id = nextId('t');
-  const counter = el('div', { class: 'counter', 'aria-live': 'polite' }, `${value.length}/${max}`);
+  const counterId = nextId('c');
+  const counter = el('div', { class: 'counter', id: counterId }, `${value.length}/${max}`);
   const attrs = {
-    id, maxlength: String(max),
+    id, maxlength: String(max), 'data-key': labelText, 'aria-describedby': counterId,
     oninput: (e) => { counter.textContent = `${e.target.value.length}/${max}`; onInput(e.target.value); },
   };
   const field = single
     ? el('input', { ...attrs, type: 'text', value, autocomplete: 'off' })
     : el('textarea', { ...attrs, rows: String(rows) });
   if (!single) field.value = value;
-  return el('div', { class: 'card tight' },
+  return el('div', { class: `card tight${optional ? '' : ' required'}` },
     el('label', { class: 'field', for: id }, labelText, optional ? el('span', { class: 'muted' }, ' (optional)') : null),
     field, counter);
 }
 
-function nav({ canNext, nextLabel = 'Weiter', onNext, back = true }) {
-  const nextBtn = el('button', { type: 'button', class: 'btn', disabled: !canNext, onclick: onNext }, nextLabel);
-  return el('div', { class: 'nav' },
+// ---------- errors shown at the field ----------
+const control = (node) => (node.matches('fieldset')
+  ? node.querySelector('input:checked') ?? node.querySelector('input')
+  : node.querySelector('input, textarea'));
+
+function clearError(node) {
+  node.querySelector(':scope > .field-error')?.remove();
+  node.classList.remove('invalid');
+  const target = node.matches('fieldset') ? node : control(node);
+  target?.removeAttribute('aria-describedby');
+  target?.removeAttribute('aria-invalid');
+}
+
+function showError(node, message) {
+  clearError(node);
+  const id = nextId('err');
+  node.querySelector('legend, label.field, label.consent').after(
+    el('p', { class: 'field-error', id }, el('span', { 'aria-hidden': 'true' }, '! '), message));
+  node.classList.add('invalid');
+  const target = node.matches('fieldset') ? node : control(node);
+  target.setAttribute('aria-describedby', id);
+  if (!node.matches('fieldset')) target.setAttribute('aria-invalid', 'true');
+  const clear = () => clearError(node);
+  node.addEventListener('input', clear, { once: true });
+  node.addEventListener('change', clear, { once: true });
+}
+
+const missing = (node, ok, message) => (ok ? [] : [[node, message]]);
+const textProblem = (card) => (control(card).value.trim().length < 3
+  ? [[card, 'Bitte beschreib es kurz (mindestens 3 Zeichen).']] : []);
+const needsText = (root) => [...(root?.querySelectorAll('.card.required') ?? [])].flatMap(textProblem);
+
+// The action bar stays at the bottom of the screen, within thumb reach. The button is never disabled:
+// a click on an incomplete step shows what is missing at the field and moves focus there.
+function nav({ checks, nextLabel = 'Weiter', onNext, back = true, accent = false }) {
+  const proceed = () => {
+    const problems = checks ? checks() : [];
+    if (problems.length === 0) { onNext(); return; }
+    for (const [node, message] of problems) showError(node, message);
+    control(problems[0][0]).focus();
+  };
+  const nextButton = el('button', { type: 'button', class: `btn${accent ? ' accent' : ''}`, onclick: proceed }, nextLabel);
+  const bar = el('div', { class: 'nav' },
     back ? el('button', { type: 'button', class: 'btn ghost', onclick: () => go(state.step - 1) }, 'Zurück') : null,
-    nextBtn);
+    nextButton);
+  bar.nextButton = nextButton;
+  return bar;
 }
 
 // ---------- steps ----------
+const ARC = 'M40 300 C 140 80, 360 40, 500 150';
 const arc = () => {
-  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  const svg = document.createElementNS(SVG_NS, 'svg');
   svg.setAttribute('viewBox', '0 0 560 360');
   svg.setAttribute('aria-hidden', 'true');
-  svg.innerHTML = '<path d="M40 300 C 140 80, 360 40, 500 150" fill="none" stroke="#F2A65A" stroke-width="10" stroke-linecap="round" stroke-dasharray="2 26"/><path d="M465 112 L505 153 L455 170" fill="none" stroke="#F2A65A" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>';
+  svg.setAttribute('class', 'arc');
+  svg.innerHTML = `<mask id="arc-mask" maskUnits="userSpaceOnUse" x="0" y="0" width="560" height="360"><path class="arc-draw" d="${ARC}" pathLength="1" fill="none" stroke="#fff" stroke-width="40" stroke-linecap="round"/></mask>`
+    + `<path d="${ARC}" fill="none" stroke="#F2A65A" stroke-width="10" stroke-linecap="round" stroke-dasharray="2 26" mask="url(#arc-mask)"/>`
+    + '<path class="arc-head" d="M465 112 L505 153 L455 170" fill="none" stroke="#F2A65A" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>';
   return svg;
 };
 
 function welcome() {
   const consent = el('input', {
     type: 'checkbox', id: 'consent', checked: state.consent,
-    onchange: (e) => { state.consent = e.target.checked; save(); start.disabled = !state.consent; },
+    onchange: (e) => { state.consent = e.target.checked; save(); },
   });
-  const start = el('button', { type: 'button', class: 'btn accent', disabled: !state.consent, onclick: () => { state.startedAt ??= Date.now(); go(1); } }, 'Los geht’s');
+  const consentField = el('div', {},
+    el('label', { class: 'consent', for: 'consent' }, consent,
+      el('span', {}, 'Ich bin einverstanden, dass meine Antworten anonym für das Projekt genutzt werden. ',
+        el('button', { type: 'button', class: 'link', onclick: openPrivacy }, 'Datenschutz lesen'))));
   return [
     el('section', { class: 'hero' }, arc(),
       el('p', { class: 'eyebrow' }, 'Studienprojekt · FOM Hochschule'),
-      el('h1', {}, 'Teig an den Händen. Rezept auf dem Tablet.'),
-      el('p', { class: 'lead' }, 'Ich entwickle „Fingerzeig“, eine Koch-App, die man per Handbewegung vor der Kamera steuert. Bevor ich sie gestalte, möchte ich wissen, welche Gesten sich für dich natürlich anfühlen.')),
-    el('ul', { class: 'facts' }, el('li', {}, 'ca. 8 Minuten'), el('li', {}, 'anonym'), el('li', {}, 'keine richtigen oder falschen Antworten')),
-    el('label', { class: 'consent', for: 'consent' }, consent,
-      el('span', {}, 'Ich bin einverstanden, dass meine Antworten anonym für das Projekt genutzt werden. ',
-        el('button', { type: 'button', class: 'link', onclick: openPrivacy }, 'Datenschutz lesen'))),
-    el('div', { class: 'nav' }, start),
+      el('h1', {}, 'Hände voller Teig. Und jetzt?'),
+      el('p', { class: 'lead' }, 'Ich entwickle „Fingerzeig“, eine Koch-App, die du mit der Hand vor der Kamera steuerst, ohne das Display anzufassen. Hilf mir herauszufinden, welche Gesten sich für dich richtig anfühlen.')),
+    el('p', { class: 'timeline' }, 'Dauert so lange, wie Nudelwasser zum Kochen braucht (ca. 8 Min.)'),
+    el('ul', { class: 'facts' }, el('li', {}, 'anonym'), el('li', {}, 'keine richtigen oder falschen Antworten')),
+    consentField,
+    nav({
+      back: false, accent: true, nextLabel: 'Los geht’s',
+      checks: () => missing(consentField, state.consent, 'Bitte stimm zu, um zu starten.'),
+      onNext: () => { state.startedAt ??= Date.now(); go(1); },
+    }),
   ];
 }
 
 function cookingStep(keys, title, extra) {
   return () => {
     const c = state.cooking;
-    const done = () => keys.every((k) => (COOKING[k].multi ? c[k].length > 0 : !!c[k]))
-      && (!extra || extra.valid());
-    const refresh = () => { save(); next.querySelector('.btn:last-child').disabled = !done(); };
+    const refresh = () => save();
     const groups = keys.map((k) => choiceGroup(COOKING[k], c[k] ?? (COOKING[k].multi ? [] : ''), (v) => {
       c[k] = v; refresh(); if (extra?.rerenderOn?.includes(k)) render();
     }));
-    const next = nav({ canNext: done(), onNext: () => go(state.step + 1) });
-    return [el('p', { class: 'eyebrow' }, 'Teil 1 · Kochen'), el('h2', {}, title), ...groups, extra ? extra.node(refresh) : null, next];
+    const extraNode = extra ? extra.node(refresh) : null;
+    const next = nav({
+      onNext: () => go(state.step + 1),
+      checks: () => [
+        ...keys.flatMap((k, i) => missing(groups[i], COOKING[k].multi ? c[k].length > 0 : !!c[k],
+          COOKING[k].multi ? 'Bitte wähle mindestens eine Antwort.' : 'Bitte wähle eine Antwort.')),
+        ...needsText(extraNode),
+      ],
+    });
+    return [el('p', { class: 'eyebrow' }, 'Teil 1 · Kochen'), el('h2', {}, title), ...groups, extraNode, next];
   };
 }
 
 const otherText = (multiKey, textKey, labelText) => ({
   rerenderOn: [multiKey],
-  valid: () => !state.cooking[multiKey].includes('other') || state.cooking[textKey].trim().length >= 3,
   node: (refresh) => (state.cooking[multiKey].includes('other')
     ? textArea(labelText, state.cooking[textKey], (v) => { state.cooking[textKey] = v; refresh(); }, { optional: false, single: true, max: 200 })
     : null),
@@ -222,7 +281,7 @@ function gestureIntro() {
     el('div', { class: 'card scenario' },
       el('p', {}, 'Stell dir vor: Du stehst in deiner Küche etwa einen Meter vor einem Tablet. Darauf läuft ein Rezept, und die Kamera erkennt deine Hand. Deine Hände sind voller Teig, du willst nichts berühren.')),
     el('p', { class: 'lead' }, 'Für fünf Aktionen wählst du, wie du deine Hand hältst und wie du sie bewegst. Probier die Bewegung ruhig kurz aus. Nimm die Geste, die dir als erste einfällt.'),
-    nav({ canNext: true, nextLabel: 'Verstanden', onNext: () => go(state.step + 1) }),
+    nav({ nextLabel: 'Verstanden', onNext: () => go(state.step + 1) }),
   ];
 }
 
@@ -234,21 +293,28 @@ function gestureStep(index) {
     const [, title, situation] = GESTURE_ACTIONS.find((g) => g[0] === actionId);
     const g = state.gestures[actionId] ?? (state.gestures[actionId] = { hand: '', motion: '', note: '', fit: 0, ease: 0 });
     const needsNote = () => g.hand === 'other' || g.motion === 'other';
-    const done = () => g.hand && g.motion && g.fit && g.ease && (!needsNote() || g.note.trim().length >= 3);
-    const refresh = () => { save(); navEl.querySelector('.btn:last-child').disabled = !done(); };
-    const navEl = nav({ canNext: done(), onNext: () => go(state.step + 1) });
+    const handGroup = choiceGroup({ label: 'Wie hältst du deine Hand?', options: inOrder(HAND_SHAPES, state.tiles.hand) }, g.hand,
+      (v) => { g.hand = v; save(); render(); }, { tiles: true, cols: 'grid grid4', icons: HAND_ICONS });
+    const motionGroup = choiceGroup({ label: 'Wie bewegst du sie?', hint: 'Richtungen aus deiner Sicht', options: inOrder(MOTIONS, state.tiles.motion) }, g.motion,
+      (v) => { g.motion = v; save(); render(); }, { tiles: true, cols: 'grid grid4', icons: MOTION_ICONS });
+    const fitGroup = scaleGroup(RATINGS.fit, g.fit, (v) => { g.fit = v; save(); });
+    const easeGroup = scaleGroup(RATINGS.ease, g.ease, (v) => { g.ease = v; save(); });
+    const note = textArea(needsNote() ? 'Beschreib deine Geste kurz' : 'Möchtest du etwas zu deiner Geste sagen?', g.note,
+      (v) => { g.note = v; save(); }, { optional: !needsNote(), rows: 2, max: 300 });
+    const navEl = nav({
+      onNext: () => go(state.step + 1),
+      checks: () => [
+        ...missing(handGroup, !!g.hand, 'Bitte wähle eine Handform.'),
+        ...missing(motionGroup, !!g.motion, 'Bitte wähle eine Bewegung.'),
+        ...missing(fitGroup, !!g.fit, 'Bitte wähle eine Zahl von 1 bis 5.'),
+        ...missing(easeGroup, !!g.ease, 'Bitte wähle eine Zahl von 1 bis 5.'),
+        ...(needsNote() ? textProblem(note) : []),
+      ],
+    });
     return [
       el('p', { class: 'eyebrow' }, `Geste ${index + 1} von ${GESTURE_ACTIONS.length}`),
       el('div', { class: 'card scenario' }, el('span', { class: 'tag' }, title), el('p', {}, situation)),
-      choiceGroup({ label: 'Wie hältst du deine Hand?', options: inOrder(HAND_SHAPES, state.tiles.hand) }, g.hand,
-        (v) => { g.hand = v; save(); render(); }, { tiles: true, cols: 'grid grid4', icons: HAND_ICONS }),
-      choiceGroup({ label: 'Wie bewegst du sie?', hint: 'Richtungen aus deiner Sicht', options: inOrder(MOTIONS, state.tiles.motion) }, g.motion,
-        (v) => { g.motion = v; save(); render(); }, { tiles: true, cols: 'grid grid4', icons: MOTION_ICONS }),
-      scaleGroup(RATINGS.fit, g.fit, (v) => { g.fit = v; refresh(); }),
-      scaleGroup(RATINGS.ease, g.ease, (v) => { g.ease = v; refresh(); }),
-      textArea(needsNote() ? 'Beschreib deine Geste kurz' : 'Möchtest du etwas zu deiner Geste sagen?', g.note,
-        (v) => { g.note = v; refresh(); }, { optional: !needsNote(), rows: 2, max: 300 }),
-      navEl,
+      handGroup, motionGroup, fitGroup, easeGroup, note, navEl,
     ];
   };
 }
@@ -259,44 +325,54 @@ function accidentalStep() {
     el('h2', {}, 'Und was soll lieber nichts auslösen?'),
     el('p', { class: 'lead' }, 'Beim Kochen bewegt man die Hände ständig. Welche Bewegung könnte aus Versehen eine Aktion auslösen?'),
     textArea('Deine Antwort', state.accidental, (v) => { state.accidental = v; save(); }, { rows: 3 }),
-    nav({ canNext: true, onNext: () => go(state.step + 1) }),
+    nav({ onNext: () => go(state.step + 1) }),
   ];
 }
 
 function aboutStep() {
   const a = state.about;
-  const done = () => a.age && a.handedness && a.experience.length > 0;
-  const navEl = nav({ canNext: done(), onNext: () => go(state.step + 1) });
-  const refresh = () => { save(); navEl.querySelector('.btn:last-child').disabled = !done(); };
+  const age = choiceGroup(ABOUT.age, a.age ?? '', (v) => { a.age = v; save(); }, { cols: 'grid' });
+  const hand = choiceGroup(ABOUT.handedness, a.handedness ?? '', (v) => { a.handedness = v; save(); });
+  const experience = choiceGroup(ABOUT.experience, a.experience, (v) => {
+    const added = v.find((x) => !a.experience.includes(x));
+    a.experience = added === 'none' ? ['none'] : v.filter((x) => x !== 'none');
+    save(); render();
+  });
   return [
     el('p', { class: 'eyebrow' }, 'Teil 3 · Kurz zu dir'),
     el('h2', {}, 'Fast geschafft.'),
-    choiceGroup(ABOUT.age, a.age ?? '', (v) => { a.age = v; refresh(); }, { cols: 'grid' }),
-    choiceGroup(ABOUT.handedness, a.handedness ?? '', (v) => { a.handedness = v; refresh(); }),
-    choiceGroup(ABOUT.experience, a.experience, (v) => {
-      const added = v.find((x) => !a.experience.includes(x));
-      a.experience = added === 'none' ? ['none'] : v.filter((x) => x !== 'none');
-      save(); render();
+    age, hand, experience,
+    nav({
+      onNext: () => go(state.step + 1),
+      checks: () => [
+        ...missing(age, !!a.age, 'Bitte wähle eine Antwort.'),
+        ...missing(hand, !!a.handedness, 'Bitte wähle eine Antwort.'),
+        ...missing(experience, a.experience.length > 0, 'Bitte wähle mindestens eine Antwort.'),
+      ],
     }),
-    navEl,
   ];
 }
 
 function finalStep() {
   const error = el('p', { class: 'error', role: 'alert', hidden: true });
-  const send = el('button', { type: 'button', class: 'btn accent', onclick: () => submit(send, error) }, 'Antworten absenden');
+  const contact = textArea('Möchtest du die App später kurz testen? Dann hinterlass eine Kontaktmöglichkeit.', state.contact,
+    (v) => { state.contact = v; save(); }, { single: true, max: CONTACT_MAX });
   const contactOk = () => !state.contact.trim() || state.contact.trim().length >= 3;
+  const bar = nav({
+    nextLabel: 'Antworten absenden', accent: true,
+    onNext: () => submit(bar.nextButton, error),
+    checks: () => missing(contact, contactOk(), 'Bitte gib mindestens 3 Zeichen ein oder lass das Feld leer.'),
+  });
   return [
     el('p', { class: 'eyebrow' }, 'Abschluss'),
     el('h2', {}, 'Noch etwas?'),
     textArea('Gibt es noch etwas, das du mir sagen möchtest?', state.comment, (v) => { state.comment = v; save(); }, { rows: 3 }),
-    textArea('Möchtest du die App später kurz testen? Dann hinterlass eine Kontaktmöglichkeit.', state.contact,
-      (v) => { state.contact = v; save(); send.disabled = !contactOk(); }, { single: true, max: CONTACT_MAX }),
+    contact,
     el('p', { class: 'hint' }, 'Die Kontaktangabe wird getrennt gespeichert und lässt sich deinen Antworten nicht zuordnen.'),
     el('div', { class: 'hp', 'aria-hidden': 'true' },
       el('label', {}, 'Website', el('input', { type: 'text', tabindex: '-1', autocomplete: 'off', oninput: (e) => { state.website = e.target.value; } }))),
     error,
-    el('div', { class: 'nav' }, el('button', { type: 'button', class: 'btn ghost', onclick: () => go(state.step - 1) }, 'Zurück'), send),
+    bar,
   ];
 }
 
@@ -316,7 +392,6 @@ const STEPS = [
   cookingStep(['frequency', 'device', 'position', 'distance'], 'Wie kochst du?'),
   cookingStep(['dirtyHands'], 'Und mit schmutzigen Händen?', {
     rerenderOn: ['dirtyHands'],
-    valid: () => !state.cooking.dirtyHands.includes('other') || state.cooking.dirtyHandsOther.trim().length >= 3,
     node: (refresh) => el('div', {},
       state.cooking.dirtyHands.includes('other')
         ? textArea('Was machst du stattdessen?', state.cooking.dirtyHandsOther, (v) => { state.cooking.dirtyHandsOther = v; refresh(); }, { optional: false, single: true, max: 200 })
@@ -376,6 +451,7 @@ const fill = document.querySelector('.progress-fill');
 
 function render() {
   const scrollY = window.scrollY;
+  const focusKey = document.activeElement?.dataset?.key;
   app.replaceChildren(...STEPS[state.step]().filter(Boolean));
   const inQuestions = state.step > 0 && state.step <= LAST_QUESTION;
   progress.hidden = !inQuestions;
@@ -383,6 +459,7 @@ function render() {
   progress.setAttribute('aria-valuenow', String(pct));
   fill.style.width = `${pct}%`;
   window.scrollTo(0, scrollY);
+  if (focusKey) app.querySelector(`[data-key="${CSS.escape(focusKey)}"]`)?.focus({ preventScroll: true });
 }
 
 function go(step) {
