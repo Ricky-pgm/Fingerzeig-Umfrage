@@ -1,0 +1,7 @@
+.github
+e2e
+test
+schema.sql
+migrations
+playwright.config.js
+README.md
