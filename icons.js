@@ -40,3 +40,12 @@ export const MOTION_ICONS = {
   tap: [dot(24, 24, 3), ring(24, 24, 9), ring(24, 24, 16)],
   other: [dot(12, 24, 2.5), dot(24, 24, 2.5), dot(36, 24, 2.5)],
 };
+
+// Small kitchen scenes for the gesture cards: objects only, never hands, so they hint at the situation, not at a gesture.
+export const KITCHEN_ICONS = {
+  next: [{ d: 'M8 14h32a2 2 0 0 1 2 2v20a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V16a2 2 0 0 1 2-2z' }, ring(13, 26, 3), { d: 'M21 22h16M21 30h10' }],
+  back: [{ d: 'M24 14c-4-3-10-3-16-2v24c6-1 12-1 16 2 4-3 10-3 16-2V12c-6-1-12-1-16 2zM24 14v24' }],
+  timer: [ring(24, 28, 14), { d: 'M24 28v-8M24 28l6 4M19 8h10M24 8v6' }],
+  ingredients: [{ d: 'M6 24h36c0 10-8 17-18 17S6 34 6 24z' }, { d: 'M12 24c2-9 9-11 12-11s10 2 12 11' }, dot(20, 31, 1), dot(28, 33, 1), dot(24, 29, 1)],
+  pause: [{ d: 'M10 20h28v16a6 6 0 0 1-6 6H16a6 6 0 0 1-6-6zM6 24h4M38 24h4M8 16h32' }, { d: 'M31 4L24 20' }],
+};

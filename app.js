@@ -1,7 +1,7 @@
 import {
-  ABOUT, CONTACT_MAX, COOKING, GESTURE_ACTIONS, HAND_SHAPES, MOTIONS, RATINGS, TEXT_MAX, values,
+  ABOUT, CHECK_URL, CONTACT_MAX, COOKING, GESTURE_ACTIONS, HAND_SHAPES, MOTIONS, RATINGS, TEXT_MAX, values,
 } from './questions.js';
-import { HAND_ICONS, MOTION_ICONS } from './icons.js';
+import { HAND_ICONS, KITCHEN_ICONS, MOTION_ICONS } from './icons.js';
 import { tileOrder } from './tiles.js';
 
 const STORE_KEY = 'fingerzeig-umfrage-v3';
@@ -397,7 +397,7 @@ function gestureStep(index) {
     });
     return [
       el('p', { class: 'eyebrow' }, `Geste ${index + 1} von ${GESTURE_ACTIONS.length}`),
-      el('div', { class: 'card scenario' }, el('span', { class: 'tag' }, title), el('p', {}, situation)),
+      el('div', { class: 'card scenario' }, el('div', {}, el('span', { class: 'tag' }, title), el('p', {}, situation)), pictogram(KITCHEN_ICONS[actionId])),
       handGroup, motionGroup, fitGroup, easeGroup, note, navEl,
     ];
   };
@@ -461,14 +461,25 @@ function finalStep() {
 }
 
 function thanks() {
+  const status = el('p', { class: 'hint', role: 'status' });
   const share = navigator.share
-    ? el('button', { type: 'button', class: 'btn', onclick: () => navigator.share({ title: 'Fingerzeig – Umfrage', url: location.origin }).catch(() => {}) }, 'Umfrage teilen')
-    : null;
+    ? el('button', { type: 'button', class: 'btn', onclick: () => navigator.share({ title: 'fingerzeig – Umfrage', url: location.origin }).catch(() => {}) }, 'Umfrage teilen')
+    : el('button', {
+      type: 'button', class: 'btn',
+      onclick: () => navigator.clipboard?.writeText(location.origin).then(
+        () => { status.textContent = 'Link kopiert.'; },
+        () => { status.textContent = `Bitte kopiere den Link: ${location.origin}`; },
+      ),
+    }, 'Link kopieren');
   return [el('section', { class: 'done' },
     el('div', { class: 'big' }, 'Danke!'),
     el('h2', {}, 'Deine Antworten sind angekommen.'),
     el('p', { class: 'lead' }, 'Sie helfen mir, Gesten zu gestalten, die sich natürlich anfühlen. Wenn du Leute kennst, die gern kochen: Teil den Link gern weiter.'),
     share,
+    status,
+    CHECK_URL ? el('div', { class: 'card bonus' },
+      el('p', {}, el('strong', {}, 'Bonus: '), 'Erkennt dein Handy deine Hand?'),
+      el('a', { class: 'btn accent', href: CHECK_URL }, 'Gerät testen')) : null,
     el('p', { class: 'hint' }, 'Eine zweite Person am selben Gerät?'),
     el('button', { type: 'button', class: 'btn ghost', onclick: restart }, 'Noch einmal teilnehmen'))];
 }

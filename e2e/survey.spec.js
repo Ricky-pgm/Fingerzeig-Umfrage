@@ -267,3 +267,14 @@ test('lets a second person take part after the first one submitted', async ({ pa
   await page.reload();
   await expect(page.getByRole('button', { name: /Los geht/ })).toBeVisible();
 });
+
+test('shows a kitchen picture on the gesture card and a share or copy button on the thank-you page', async ({ page }) => {
+  await toGestureStep(page);
+  await page.getByRole('button', { name: 'Verstanden' }).click();
+  await expect(page.locator('.scenario svg.pic')).toHaveCount(1);
+
+  await page.evaluate(() => { localStorage.setItem('fingerzeig-umfrage-done', 'true'); });
+  await page.reload();
+  await expect(page.getByRole('button', { name: /Umfrage teilen|Link kopieren/ })).toBeVisible();
+  await expect(page.getByText('Erkennt dein Handy deine Hand?')).toHaveCount(0);
+});

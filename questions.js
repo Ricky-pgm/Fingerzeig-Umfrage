@@ -5,6 +5,9 @@ export const SCHEMA_VERSION = 2;
 
 export const TEXT_MAX = 600;
 export const CONTACT_MAX = 120;
+// Address of the device check shown on the thank-you page as a bonus. Empty hides it.
+export const CHECK_URL = '';
+
 export const RATING_MIN = 1;
 export const RATING_MAX = 5;
 export const DURATION_MAX_S = 86_400;
