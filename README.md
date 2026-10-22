@@ -133,3 +133,7 @@ passende Datei aus `migrations/` in Neon ausgeführt wurde.
 Reihenfolge, einmal je Datei im Neon SQL Editor: `migrations/001_methodology.sql`, dann `migrations/002_privacy_and_views.sql`.
 Vor 001 die Tabellen leeren. Die Dateien in `migrations/` sind der Weg für bestehende Datenbanken, `schema.sql` der Endstand
 für eine neue.
+- **Farben aus dem Poster gemessen** (`design/plakat-4x5.png`, Auslesen der Pixel): Safran `#EA9E3A` („Display?“, QR-Rahmen),
+  Dunkelgrün `#1E3A2A` (Button, Titel), Creme `#F6F2EA` (Karte, Headline), Holz im Mittel `#352318`. Die CSS-Variablen
+  entsprechen diesen Werten. Das Rostrot der Zeile „UMFRAGE · CA. 8 MIN.“ (`#C65A3E`) kommt in der App nicht vor, Fehler
+  bleiben `#B3261E`.

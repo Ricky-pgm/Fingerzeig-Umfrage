@@ -271,8 +271,8 @@ const arc = () => {
   svg.setAttribute('aria-hidden', 'true');
   svg.setAttribute('class', 'arc');
   svg.innerHTML = `<mask id="arc-mask" maskUnits="userSpaceOnUse" x="0" y="0" width="560" height="360"><path class="arc-draw" d="${ARC}" pathLength="1" fill="none" stroke="#fff" stroke-width="40" stroke-linecap="round"/></mask>`
-    + `<path d="${ARC}" fill="none" stroke="#F2A65A" stroke-width="10" stroke-linecap="round" stroke-dasharray="2 26" mask="url(#arc-mask)"/>`
-    + '<path class="arc-head" d="M465 112 L505 153 L455 170" fill="none" stroke="#F2A65A" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>';
+    + `<path d="${ARC}" fill="none" stroke="#EA9E3A" stroke-width="10" stroke-linecap="round" stroke-dasharray="2 26" mask="url(#arc-mask)"/>`
+    + '<path class="arc-head" d="M465 112 L505 153 L455 170" fill="none" stroke="#EA9E3A" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>';
   return svg;
 };
 
