@@ -1,9 +1,10 @@
 import {
-  ABOUT, CONTACT_MAX, COOKING, GESTURE_ACTIONS, HAND_SHAPES, MOTIONS, RATINGS, TEXT_MAX,
+  ABOUT, CONTACT_MAX, COOKING, GESTURE_ACTIONS, HAND_SHAPES, MOTIONS, RATINGS, TEXT_MAX, values,
 } from './questions.js';
 import { HAND_ICONS, MOTION_ICONS } from './icons.js';
+import { tileOrder } from './tiles.js';
 
-const STORE_KEY = 'fingerzeig-umfrage-v2';
+const STORE_KEY = 'fingerzeig-umfrage-v3';
 const DONE_KEY = 'fingerzeig-umfrage-done';
 
 // ---------- storage (per viewer convenience only, may be unavailable) ----------
@@ -45,6 +46,7 @@ function freshState() {
     consent: false,
     cooking: { dirtyHands: [], actions: [], dirtyHandsOther: '', actionsOther: '', annoyance: '' },
     order: shuffled(GESTURE_ACTIONS.map((g) => g[0])),
+    tiles: { hand: tileOrder(values(HAND_SHAPES)), motion: tileOrder(values(MOTIONS)) },
     gestures: {},
     accidental: '',
     about: { experience: [] },
@@ -224,6 +226,8 @@ function gestureIntro() {
   ];
 }
 
+const inOrder = (options, order) => order.map((id) => options.find((o) => o[0] === id));
+
 function gestureStep(index) {
   return () => {
     const actionId = state.order[index];
@@ -236,9 +240,9 @@ function gestureStep(index) {
     return [
       el('p', { class: 'eyebrow' }, `Geste ${index + 1} von ${GESTURE_ACTIONS.length}`),
       el('div', { class: 'card scenario' }, el('span', { class: 'tag' }, title), el('p', {}, situation)),
-      choiceGroup({ label: 'Wie hältst du deine Hand?', options: HAND_SHAPES }, g.hand,
+      choiceGroup({ label: 'Wie hältst du deine Hand?', options: inOrder(HAND_SHAPES, state.tiles.hand) }, g.hand,
         (v) => { g.hand = v; save(); render(); }, { tiles: true, cols: 'grid grid4', icons: HAND_ICONS }),
-      choiceGroup({ label: 'Wie bewegst du sie?', hint: 'Richtungen aus deiner Sicht', options: MOTIONS }, g.motion,
+      choiceGroup({ label: 'Wie bewegst du sie?', hint: 'Richtungen aus deiner Sicht', options: inOrder(MOTIONS, state.tiles.motion) }, g.motion,
         (v) => { g.motion = v; save(); render(); }, { tiles: true, cols: 'grid grid4', icons: MOTION_ICONS }),
       scaleGroup(RATINGS.fit, g.fit, (v) => { g.fit = v; refresh(); }),
       scaleGroup(RATINGS.ease, g.ease, (v) => { g.ease = v; refresh(); }),
