@@ -102,19 +102,44 @@ function pictogram(parts) {
   return svg;
 }
 
+// A drawn tick next to the question once it is answered. Animated only for the change that answered it.
+let justAnswered = null;
+
+function tick() {
+  const svg = document.createElementNS(SVG_NS, 'svg');
+  svg.setAttribute('viewBox', '0 0 20 20');
+  svg.setAttribute('class', 'tick');
+  svg.setAttribute('aria-hidden', 'true');
+  svg.innerHTML = '<path d="M3 10.5l4.5 4.5L17 5" pathLength="1"/>';
+  return svg;
+}
+
+function markAnswered(fieldset, label, answered, wasAnswered) {
+  fieldset.classList.toggle('answered', answered);
+  fieldset.classList.toggle('just', answered && !wasAnswered);
+  if (answered && !wasAnswered) navigator.vibrate?.(8);
+}
+
 function choiceGroup(question, current, onChange, { tiles = false, cols = '', icons = null } = {}) {
   const name = nextId('q');
   const type = question.multi ? 'checkbox' : 'radio';
+  const answered = (v) => (question.multi ? v.length > 0 : !!v);
   const options = question.options.map(([value, label]) => {
     const checked = question.multi ? current.includes(value) : current === value;
     const input = el('input', {
       type, name, value, checked, 'data-key': `${question.label}|${value}`,
       onchange: (e) => {
+        const wasAnswered = answered(current);
+        justAnswered = wasAnswered ? null : question.label;
+        let next = value;
         if (question.multi) {
           const set = new Set(current);
           if (e.target.checked) set.add(value); else set.delete(value);
-          onChange([...set]);
-        } else onChange(value);
+          next = [...set];
+        }
+        onChange(next);
+        justAnswered = null;
+        if (group.isConnected) markAnswered(group, question.label, answered(next), wasAnswered);
       },
     });
     const body = tiles
@@ -122,25 +147,37 @@ function choiceGroup(question, current, onChange, { tiles = false, cols = '', ic
       : el('span', {}, el('span', { class: 'check', 'aria-hidden': 'true' }), label);
     return el('label', { class: `opt${tiles ? ' tile' : ''}` }, input, body);
   });
-  return el('fieldset', {},
-    el('legend', {}, question.label),
+  const group = el('fieldset', {},
+    el('legend', {}, question.label, tick()),
     question.hint ? el('p', { class: 'hint' }, question.hint) : null,
     el('div', { class: `options ${cols}` }, options));
+  if (answered(current)) {
+    group.classList.add('answered');
+    if (justAnswered === question.label) group.classList.add('just');
+  }
+  return group;
 }
 
 function scaleGroup({ label, low, high }, current, onChange) {
   const name = nextId('s');
   const options = [1, 2, 3, 4, 5].map((n) => el('label', { class: 'opt scale' },
     el('input', {
-      type: 'radio', name, value: String(n), checked: current === n, onchange: () => onChange(n),
+      type: 'radio', name, value: String(n), checked: current === n,
+      onchange: () => {
+        const wasAnswered = !!current;
+        onChange(n);
+        markAnswered(group, label, true, wasAnswered);
+      },
       'data-key': `${label}|${n}`,
       'aria-label': n === 1 ? `1, ${low}` : n === 5 ? `5, ${high}` : String(n),
     }),
     el('span', {}, String(n))));
-  return el('fieldset', {},
-    el('legend', {}, label),
+  const group = el('fieldset', {},
+    el('legend', {}, label, tick()),
     el('div', { class: 'options scale-row' }, options),
     el('div', { class: 'scale-ends', 'aria-hidden': 'true' }, el('span', {}, low), el('span', {}, high)));
+  if (current) group.classList.add('answered');
+  return group;
 }
 
 function textArea(labelText, value, onInput, { optional = true, rows = 4, max = TEXT_MAX, single = false } = {}) {
@@ -233,10 +270,12 @@ function welcome() {
         el('button', { type: 'button', class: 'link', onclick: openPrivacy }, 'Datenschutz lesen'))));
   return [
     el('section', { class: 'hero' }, arc(),
-      el('p', { class: 'eyebrow' }, 'Studienprojekt · FOM Hochschule'),
-      el('h1', {}, 'Hände voller Teig. Und jetzt?'),
-      el('p', { class: 'lead' }, 'Ich entwickle „Fingerzeig“, eine Koch-App, die du mit der Hand vor der Kamera steuerst, ohne das Display anzufassen. Hilf mir herauszufinden, welche Gesten sich für dich richtig anfühlen.')),
+      el('p', { class: 'pill' }, 'Studienprojekt · FOM'),
+      el('h1', {}, 'Schon wieder Teig am ', el('span', { class: 'accent' }, 'Display?')),
+      el('p', { class: 'lead' }, 'Ich baue eine Koch-App, die du ohne Touch steuerst.')),
     el('p', { class: 'timeline' }, 'Dauert so lange, wie Nudelwasser zum Kochen braucht (ca. 8 Min.)'),
+    el('h2', {}, 'Zeig mir, wie’s geht.'),
+    el('p', {}, 'Hilf mir herauszufinden, welche Gesten sich für dich richtig anfühlen.'),
     el('ul', { class: 'facts' }, el('li', {}, 'anonym'), el('li', {}, 'keine richtigen oder falschen Antworten')),
     consentField,
     nav({
@@ -447,7 +486,8 @@ async function submit(button, error) {
 // ---------- render ----------
 const app = document.getElementById('app');
 const progress = document.querySelector('.progress');
-const fill = document.querySelector('.progress-fill');
+const pot = document.querySelector('.pot');
+const progressText = document.querySelector('.progress-text');
 
 function render() {
   const scrollY = window.scrollY;
@@ -457,15 +497,23 @@ function render() {
   progress.hidden = !inQuestions;
   const pct = Math.round((Math.min(state.step, LAST_QUESTION) / LAST_QUESTION) * 100);
   progress.setAttribute('aria-valuenow', String(pct));
-  fill.style.width = `${pct}%`;
+  progress.setAttribute('aria-valuetext', `Frage ${Math.min(state.step, LAST_QUESTION)} von ${LAST_QUESTION}`);
+  progressText.textContent = `${Math.min(state.step, LAST_QUESTION)}/${LAST_QUESTION}`;
+  pot.style.setProperty('--p', String(pct / 100));
+  // The water starts to bubble from 60 % and steam rises on the last questions.
+  pot.dataset.state = pct >= 90 ? 'steam' : pct >= 60 ? 'boil' : 'still';
   window.scrollTo(0, scrollY);
   if (focusKey) app.querySelector(`[data-key="${CSS.escape(focusKey)}"]`)?.focus({ preventScroll: true });
 }
 
 function go(step) {
+  const back = step < state.step;
   state.step = Math.max(0, Math.min(step, STEPS.length - 1));
   save();
+  app.classList.remove('enter', 'enter-back');
   render();
+  void app.offsetWidth;
+  app.classList.add(back ? 'enter-back' : 'enter');
   window.scrollTo(0, 0);
   app.focus({ preventScroll: true });
 }

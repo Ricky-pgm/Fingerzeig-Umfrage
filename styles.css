@@ -19,8 +19,30 @@ button,input,textarea{font:inherit;color:inherit}
 .bar{position:sticky;top:0;z-index:5;background:var(--green);color:#F4EFE6;padding-top:env(safe-area-inset-top)}
 .bar-inner{max-width:600px;margin:0 auto;padding:14px 20px;display:flex;align-items:center;gap:16px}
 .brand{font:700 20px/1 "Bricolage",sans-serif;color:var(--saffron)}
-.progress{flex:1;height:8px;border-radius:99px;background:rgba(244,239,230,.18);overflow:hidden}
-.progress-fill{height:100%;width:0;background:var(--saffron);border-radius:99px;transition:width .35s ease}
+.progress{margin-left:auto;display:flex;align-items:center;gap:10px;color:#F4EFE6}
+.progress[hidden]{display:none}
+.progress-text{font:700 14px/1 "DM",sans-serif;letter-spacing:.04em;color:#E6DFD1}
+.pot{width:52px;height:46px;flex:none}
+.pot .water{transform-box:fill-box;transform-origin:50% 100%;transform:scaleY(var(--p,0));transition:transform .6s cubic-bezier(.3,.7,.3,1)}
+.pot .bubble,.pot .steam{opacity:0}
+.pot[data-state=boil] .bubble,.pot[data-state=steam] .bubble{animation:bubble 1.6s ease-in infinite}
+.pot .b2{animation-delay:.5s!important}
+.pot .b3{animation-delay:1s!important}
+.pot[data-state=steam] .steam{animation:steam 2s ease-in-out infinite}
+.pot .s2{animation-delay:.35s!important}
+.pot .s3{animation-delay:.7s!important}
+@keyframes bubble{0%{opacity:0;transform:translateY(0)}20%{opacity:1}100%{opacity:0;transform:translateY(-14px)}}
+@keyframes steam{0%{opacity:0;transform:translateY(4px)}40%{opacity:.9}100%{opacity:0;transform:translateY(-4px)}}
+.pot .bubble,.pot .steam{transform-box:fill-box}
+.wrap{overflow-x:clip}
+.enter > *,.enter-back > *{animation:slide .24s ease-out both}
+.enter-back > *{--from:-18px}
+.enter > *{--from:18px}
+.enter > :nth-child(2),.enter-back > :nth-child(2){animation-delay:.03s}
+.enter > :nth-child(3),.enter-back > :nth-child(3){animation-delay:.06s}
+.enter > :nth-child(4),.enter-back > :nth-child(4){animation-delay:.09s}
+.enter > :nth-child(n+5),.enter-back > :nth-child(n+5){animation-delay:.12s}
+@keyframes slide{from{opacity:0;transform:translateX(var(--from))}}
 
 .wrap{flex:1;width:100%;max-width:600px;margin:0 auto;padding:28px 20px 40px;outline:none}
 .foot{max-width:600px;width:100%;margin:0 auto;padding:16px 20px calc(24px + env(safe-area-inset-bottom));display:flex;justify-content:space-between;gap:12px;font-size:14px;color:var(--muted)}
@@ -31,7 +53,13 @@ h2{font:800 clamp(26px,6.5vw,34px)/1.08 "Bricolage",sans-serif;letter-spacing:-.
 .lead{font-size:19px;line-height:1.5;margin:0 0 20px}
 .muted{color:var(--muted)}
 
-.hero{background:var(--green);color:#F4EFE6;border-radius:28px;padding:118px 24px 26px;margin-bottom:22px;position:relative;overflow:hidden}
+.hero{background:
+  radial-gradient(circle,rgba(255,255,255,.2) 0 1px,transparent 1.6px) 0 0/37px 41px,
+  radial-gradient(circle,rgba(255,255,255,.14) 0 1px,transparent 1.6px) 11px 17px/53px 47px,
+  repeating-linear-gradient(90deg,#3b2418 0 22px,#2c1a10 22px 24px,#42291a 24px 49px,#33200f 49px 51px);
+  color:#F4EFE6;border-radius:28px;padding:118px 24px 28px;margin-bottom:18px;position:relative;overflow:hidden}
+.pill{display:inline-block;margin:0 0 16px;padding:6px 14px;border:1px solid rgba(244,239,230,.45);border-radius:99px;font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#E6DFD1}
+.hero h1 .accent{color:var(--saffron)}
 .hero h1{color:#F4EFE6}
 .hero .lead{color:#E6DFD1;margin:0}
 .hero svg{position:absolute;right:22px;top:20px;width:150px;opacity:.95}
@@ -46,7 +74,6 @@ h2{font:800 clamp(26px,6.5vw,34px)/1.08 "Bricolage",sans-serif;letter-spacing:-.
 
 .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:20px;margin:0 0 18px}
 .card.tight{padding:16px}
-.hero .eyebrow{color:#CFC7B6}
 .scenario{background:var(--saffron-soft);border:0}
 .scenario .tag{display:inline-block;font:700 15px/1 "Bricolage",sans-serif;background:var(--green);color:#F4EFE6;border-radius:99px;padding:8px 14px;margin-bottom:10px}
 .scenario p{margin:0;font-size:19px}
@@ -107,8 +134,16 @@ dialog p{margin:0 0 12px;font-size:16px}
 .done{text-align:center;padding-top:30px}
 .done .big{font:800 64px/1 "Bricolage",sans-serif;color:var(--saffron);margin-bottom:12px}
 
+legend .tick{display:none;width:20px;height:20px;margin-left:8px;vertical-align:-3px;fill:none;stroke:var(--green);stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+.answered legend .tick{display:inline-block}
+.tick path{stroke-dasharray:1;stroke-dashoffset:0}
+.just .tick path{animation:tick .3s ease-out both}
+@keyframes tick{from{stroke-dashoffset:1}}
+
 @media (prefers-reduced-motion:reduce){
   *{transition:none!important;animation:none!important}
+  .pot[data-state=boil] .bubble,.pot[data-state=steam] .bubble{opacity:1}
+  .pot[data-state=steam] .steam{opacity:.9}
   .arc-draw{stroke-dashoffset:0}
   .arc-head{opacity:1}
 }

@@ -158,3 +158,69 @@ test('keeps the action bar at the bottom of the screen', async ({ page }) => {
   const viewport = page.viewportSize();
   expect(box.y + box.height).toBeGreaterThan(viewport.height - 2);
 });
+
+async function toGestureStep(page) {
+  await page.goto('/');
+  await page.getByLabel(/einverstanden/).check();
+  await page.getByRole('button', { name: /Los geht/ }).click();
+  for (const name of ['Etwa einmal pro Woche', 'Tablet', 'Angelehnt, z. B. an die Wand', '50 cm bis 1 m']) await pick(page, name);
+  await page.getByRole('button', { name: 'Weiter' }).click();
+  await pick(page, 'Mit Knöchel, Ellbogen oder Handrücken tippen');
+  await page.getByRole('button', { name: 'Weiter' }).click();
+  await pick(page, 'Zum nächsten Schritt');
+  await page.getByRole('button', { name: 'Weiter' }).click();
+}
+
+test('the pot fills with the progress, bubbles late and steams on the last questions', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.getByRole('progressbar')).toBeHidden();
+  await page.getByLabel(/einverstanden/).check();
+  await page.getByRole('button', { name: /Los geht/ }).click();
+  const bar = page.getByRole('progressbar', { name: 'Fortschritt' });
+  await expect(bar).toHaveAttribute('aria-valuetext', 'Frage 1 von 12');
+  await expect(page.locator('.pot')).toHaveAttribute('data-state', 'still');
+  await expect(page.locator('.progress-text')).toHaveText('1/12');
+});
+
+test('draws a tick next to an answered question, once', async ({ page }) => {
+  await toGestureStep(page);
+  await page.getByRole('button', { name: 'Verstanden' }).click();
+  const fit = page.getByRole('group', { name: /passt/ });
+  await expect(fit).not.toHaveClass(/answered/);
+  await fit.getByRole('radio', { name: '3' }).check();
+  await expect(fit).toHaveClass(/answered/);
+  await expect(fit).toHaveClass(/just/);
+  await page.getByRole('radio', { name: /Faust/ }).check();
+  await expect(page.getByRole('group', { name: /passt/ })).toHaveClass(/answered/);
+  await expect(page.getByRole('group', { name: /passt/ })).not.toHaveClass(/just/);
+});
+
+test('slides the step in without horizontal overflow, and not at all with reduced motion', async ({ page }) => {
+  await page.goto('/');
+  await page.getByLabel(/einverstanden/).check();
+  await page.getByRole('button', { name: /Los geht/ }).click();
+  await expect(page.locator('#app')).toHaveClass(/enter/);
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+  expect(overflow).toBeLessThanOrEqual(0);
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.getByRole('radio', { name: 'Tablet' }).check();
+  const name = await page.locator('#app > h2').evaluate((node) => getComputedStyle(node).animationName);
+  expect(name).toBe('none');
+});
+
+for (const [step, state, valuetext] of [[9, 'boil', 'Frage 9 von 12'], [12, 'steam', 'Frage 12 von 12']]) {
+  test(`the pot is in state "${state}" at step ${step}`, async ({ page }) => {
+    await page.addInitScript((at) => {
+      const gestures = Object.fromEntries(['next', 'back', 'timer', 'ingredients', 'pause'].map((a) => [a, { hand: 'fist', motion: 'still', note: '', fit: 3, ease: 3 }]));
+      sessionStorage.setItem('fingerzeig-umfrage-v3', JSON.stringify({
+        step: at, consent: true, submissionId: '3f2b8c1e-5a4d-4e6f-9b7a-1c2d3e4f5a6b', startedAt: 1,
+        cooking: { dirtyHands: ['wash'], actions: ['next'], dirtyHandsOther: '', actionsOther: '', annoyance: '', frequency: 'weekly', device: 'phone', position: 'flat', distance: 'lt50' },
+        order: Object.keys(gestures), tiles: { hand: ['open_palm', 'fist', 'point', 'thumb_up', 'thumb_down', 'victory', 'pinch', 'other'], motion: ['still', 'swipe_left', 'swipe_right', 'swipe_up', 'swipe_down', 'circle', 'tap', 'other'] },
+        gestures, accidental: '', about: { experience: [] }, comment: '', contact: '', website: '',
+      }));
+    }, step);
+    await page.goto('/');
+    await expect(page.locator('.pot')).toHaveAttribute('data-state', state);
+    await expect(page.getByRole('progressbar')).toHaveAttribute('aria-valuetext', valuetext);
+  });
+}
