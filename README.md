@@ -16,7 +16,7 @@ Statische Seite + eine Vercel-Funktion (`/api/submit`, Region Frankfurt) + Neon 
 | `test/` | Unit-Tests (Prüfregeln, API-Handler): `npm test` |
 | `e2e/` | Playwright-Test im Handy-Format gegen eine gemockte API: `npm run test:e2e` |
 | `migrations/` | SQL-Änderungen an einer bestehenden Datenbank, nummeriert, einmal in Neon ausführen |
-| `.github/workflows/ci.yml` | CI: `npm ci`, `npm test`, Playwright-E2E |
+| `.github/workflows/ci.yml` | CI: `npm ci`, `npm test`, Playwright-E2E, Screenshots aller Schritte (Artefakt) |
 
 ## Veröffentlichen (ca. 15 Minuten)
 
@@ -79,3 +79,18 @@ passende Datei aus `migrations/` in Neon ausgeführt wurde.
 - **Bausteine der Geste:** Handform und Bewegung sind neutrale Linien-Piktogramme (`icons.js`, reine Pfaddaten),
   keine Emoji, die je Gerät anders aussehen. Die Reihenfolge der Kacheln wird je Person zufällig gemischt und
   bleibt für alle fünf Gesten gleich; „Andere“ steht immer zuletzt (`tiles.js`).
+- **Aktionsleiste:** Der primäre Button sitzt auf allen Schritten fixiert unten im Daumenbereich (mit Safe-Area).
+  Er ist nie ausgegraut: Ein Klick bei unvollständigen Angaben zeigt direkt am Feld, was fehlt, und setzt den Fokus
+  dorthin (`aria-describedby`). Die Meldung verschwindet, sobald das Feld bearbeitet wird.
+- **Fokus:** Beim Aktualisieren eines Schritts (z. B. nach Auswahl einer Kachel) bleibt der Fokus auf dem gewählten Element.
+  Der Zeichenzähler wird nicht mehr bei jedem Tastendruck vorgelesen, sondern hängt als Beschreibung am Feld.
+- **Startseite:** Überschrift und Zeitzeile stammen vom Poster („Dauert so lange, wie Nudelwasser zum Kochen braucht
+  (ca. 8 Min.)“). Die Minutenangabe wird nach der gemessenen Dauer angepasst.
+- **Ziel Lighthouse (mobil) ≥ 95:** Messung vom 22.10.2026 (Lighthouse 13.5, Startseite, lokal mit Poster-Farben):
+  Performance 99, Barrierefreiheit 100, Best Practices 100, SEO 60. SEO fällt nur wegen `noindex` ab
+  (Audit „Page is blocked from indexing“); das bleibt Absicht, damit die Umfrage nicht in Suchmaschinen auftaucht.
+
+## Screenshots für das Design
+
+`npm run screenshots` rendert alle Schritte bei 390 × 844 in den Ordner `screenshots/`. Die CI lädt ihn als Artefakt
+`screenshots` hoch (Reiter „Summary“ des Workflow-Laufs).
