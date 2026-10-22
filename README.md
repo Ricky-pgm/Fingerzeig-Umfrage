@@ -107,3 +107,29 @@ passende Datei aus `migrations/` in Neon ausgeführt wurde.
   „Weitermachen“ oder „Neu beginnen“ (zweiter Klick zur Bestätigung). Der Datenschutztext nennt das Zwischenspeichern.
 - **Noch einmal teilnehmen:** Die Danke-Seite hat den Button „Noch einmal teilnehmen“ (z. B. für eine zweite Person am
   selben Gerät). Er löscht den Merker „fertig“ und beginnt mit einer neuen `submission_id`.
+- **Gesten-Karte:** Zu jeder Aktion zeigt die Karte einen kleinen Küchengegenstand (Brett, Rezeptbuch, Timer, Mehlschüssel,
+  Topf), nie eine Hand. Die Skalen 1–5 sind an beiden Enden beschriftet.
+- **Danke-Seite:** „Umfrage teilen“ (Web Share) oder „Link kopieren“ als Ersatz. Der Bonus „Erkennt dein Handy deine Hand?“
+  erscheint erst, wenn in `questions.js` die Adresse `CHECK_URL` des Gerätechecks eingetragen ist.
+- **Kontakt ohne Datum (Migration 002):** `test_contacts` hat keine Zeitangabe mehr, damit sich ein Kontakt nicht über den Tag
+  einer Antwort zuordnen lässt. Dazu die Views `v_duration` (Median, Mittel, Minimum, Maximum in Minuten, über 1 h ausgelassen)
+  und `v_ratings` (Passung und Leichtigkeit je Aktion).
+
+## Grenzen der Methode
+
+- **Nähe zum MediaPipe-Vokabular:** Die Handformen (offene Hand, Faust, ein Finger, Daumen hoch/runter, V) entsprechen weitgehend
+  den Gesten, die der Gesture Recognizer kennt. Die Auswahl kann also Gesten nahelegen, die sich leicht erkennen lassen
+  (Legacy Bias). Gegenmaßnahmen: neutrale Piktogramme, zufällige Kachelreihenfolge je Person, „Andere“ immer zuletzt.
+- **Feste Zerlegung in Handform × Bewegung:** Jede Geste besteht aus genau einer Handform und einer Bewegung. Zweihändige Gesten,
+  Kopf- oder Körperbewegungen und Abfolgen mehrerer Gesten sind nicht vorgesehen; „Andere“ mit Beschreibung ist der einzige Ausweg.
+- **Keine Vorführung am Gerät:** Die Teilnehmenden wählen Bausteine, sie führen die Geste nicht vor einer Kamera aus. Die
+  Bewertung (Passung, Leichtigkeit) ist eine Einschätzung, keine Messung.
+- **„Andere“-Antworten:** Solange sie nicht manuell codiert sind (`gesture_codes`), zählt jede als eigene Geste und senkt die
+  Agreement Rate.
+- **Online statt moderiert:** Es gibt keine Rückfragen und keine Beobachtung; die Stichprobe ist selbst gewählt.
+
+## Datenbank aktualisieren
+
+Reihenfolge, einmal je Datei im Neon SQL Editor: `migrations/001_methodology.sql`, dann `migrations/002_privacy_and_views.sql`.
+Vor 001 die Tabellen leeren. Die Dateien in `migrations/` sind der Weg für bestehende Datenbanken, `schema.sql` der Endstand
+für eine neue.
