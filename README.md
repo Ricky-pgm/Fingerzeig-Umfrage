@@ -84,8 +84,10 @@ passende Datei aus `migrations/` in Neon ausgeführt wurde.
   dorthin (`aria-describedby`). Die Meldung verschwindet, sobald das Feld bearbeitet wird.
 - **Fokus:** Beim Aktualisieren eines Schritts (z. B. nach Auswahl einer Kachel) bleibt der Fokus auf dem gewählten Element.
   Der Zeichenzähler wird nicht mehr bei jedem Tastendruck vorgelesen, sondern hängt als Beschreibung am Feld.
-- **Startseite:** Überschrift und Zeitzeile stammen vom Poster („Dauert so lange, wie Nudelwasser zum Kochen braucht
-  (ca. 8 Min.)“). Die Minutenangabe wird nach der gemessenen Dauer angepasst.
+- **Startseite:** Überschrift („Schon wieder Teig am Display?“, „Display?“ in Safran), Unterzeile, „Zeig mir, wie’s geht.“,
+  Holz-Optik und kleingeschriebenes Logo folgen dem Poster `design/plakat-4x5.png`. Die Zeile „Dauert so lange, wie
+  Nudelwasser zum Kochen braucht (ca. 8 Min.)“ steht zusätzlich als Band; die Minutenangabe wird nach der gemessenen
+  Dauer angepasst.
 - **Ziel Lighthouse (mobil) ≥ 95:** Messung vom 22.10.2026 (Lighthouse 13.5, Startseite, lokal mit Poster-Farben):
   Performance 99, Barrierefreiheit 100, Best Practices 100, SEO 60. SEO fällt nur wegen `noindex` ab
   (Audit „Page is blocked from indexing“); das bleibt Absicht, damit die Umfrage nicht in Suchmaschinen auftaucht.
@@ -94,3 +96,9 @@ passende Datei aus `migrations/` in Neon ausgeführt wurde.
 
 `npm run screenshots` rendert alle Schritte bei 390 × 844 in den Ordner `screenshots/`. Die CI lädt ihn als Artefakt
 `screenshots` hoch (Reiter „Summary“ des Workflow-Laufs).
+- **Fortschritt als Kochtopf:** Der Topf in der Kopfzeile füllt sich mit der Frage (`--p`), ab 60 % blubbert das Wasser,
+  ab 90 % steigt Dampf auf. Die Kopfzeile zeigt zusätzlich „n/12“; das Bedienelement (`role=progressbar`) sagt „Frage n von 12“.
+- **Übergänge:** Ein Schritt gleitet in 240 ms seitlich ein (zurück: von links). Nur beim Wechsel des Schritts, nicht bei
+  jeder Auswahl. Mit `prefers-reduced-motion` entfallen alle Animationen; Blasen und Dampf stehen dann statisch.
+- **Häkchen:** Neben einer beantworteten Frage zeichnet sich ein Häkchen, nur für die Änderung, die sie beantwortet hat.
+  Vibration (8 ms) nur, wo der Browser sie unterstützt (nicht iOS).
