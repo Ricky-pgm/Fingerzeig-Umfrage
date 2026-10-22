@@ -110,7 +110,7 @@ passende Datei aus `migrations/` in Neon ausgeführt wurde.
 - **Gesten-Karte:** Zu jeder Aktion zeigt die Karte einen kleinen Küchengegenstand (Brett, Rezeptbuch, Timer, Mehlschüssel,
   Topf), nie eine Hand. Die Skalen 1–5 sind an beiden Enden beschriftet.
 - **Danke-Seite:** „Umfrage teilen“ (Web Share) oder „Link kopieren“ als Ersatz. Der Bonus „Erkennt dein Handy deine Hand?“
-  erscheint erst, wenn in `questions.js` die Adresse `CHECK_URL` des Gerätechecks eingetragen ist.
+  verlinkt `CHECK_URL` in `questions.js` (Gerätecheck der App, Azure-Static-Website). Ist sie leer, entfällt der Bonus.
 - **Kontakt ohne Datum (Migration 002):** `test_contacts` hat keine Zeitangabe mehr, damit sich ein Kontakt nicht über den Tag
   einer Antwort zuordnen lässt. Dazu die Views `v_duration` (Median, Mittel, Minimum, Maximum in Minuten, über 1 h ausgelassen)
   und `v_ratings` (Passung und Leichtigkeit je Aktion).
