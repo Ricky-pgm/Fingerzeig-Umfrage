@@ -1,6 +1,9 @@
 import {
-  ABOUT, CONTACT_MAX, COOKING, GESTURE_ACTIONS, HAND_SHAPES, MOTIONS, SCHEMA_VERSION, TEXT_MAX, values,
+  ABOUT, CONTACT_MAX, COOKING, DURATION_MAX_S, GESTURE_ACTIONS, HAND_SHAPES, MOTIONS, RATING_MAX, RATING_MIN,
+  SCHEMA_VERSION, TEXT_MAX, values,
 } from '../questions.js';
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 const isPlainObject = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
 
@@ -16,6 +19,11 @@ function optionalText(v, path) {
   const t = v.trim();
   if (t.length > TEXT_MAX) throw new Error(`${path} too long`);
   return t;
+}
+
+function rating(v, path) {
+  if (!Number.isInteger(v) || v < RATING_MIN || v > RATING_MAX) throw new Error(`${path} invalid`);
+  return v;
 }
 
 function choice(v, question, path) {
@@ -42,8 +50,12 @@ function group(input, questions, path, extraText = []) {
 
 export function validateSubmission(body) {
   if (!isPlainObject(body)) throw new Error('body must be an object');
-  onlyKeys(body, ['answers', 'contact', 'website'], '');
+  onlyKeys(body, ['answers', 'contact', 'website', 'submissionId', 'durationS'], '');
   if (body.website) throw new Error('rejected');
+  if (typeof body.submissionId !== 'string' || !UUID.test(body.submissionId)) throw new Error('submissionId invalid');
+  if (!Number.isInteger(body.durationS) || body.durationS < 0 || body.durationS > DURATION_MAX_S) {
+    throw new Error('durationS invalid');
+  }
 
   const a = body.answers;
   if (!isPlainObject(a)) throw new Error('answers missing');
@@ -57,21 +69,27 @@ export function validateSubmission(body) {
   }
   const actionIds = values(GESTURE_ACTIONS);
   const seen = new Set();
+  const positions = new Set();
   const gestures = a.gestures.map((g, i) => {
     if (!isPlainObject(g)) throw new Error(`gestures[${i}] invalid`);
-    onlyKeys(g, ['action', 'position', 'hand', 'motion', 'note'], `gestures[${i}].`);
+    onlyKeys(g, ['action', 'position', 'hand', 'motion', 'note', 'fit', 'ease'], `gestures[${i}].`);
     if (!actionIds.includes(g.action) || seen.has(g.action)) throw new Error(`gestures[${i}].action invalid`);
     seen.add(g.action);
-    if (!Number.isInteger(g.position) || g.position < 1 || g.position > GESTURE_ACTIONS.length) {
+    if (!Number.isInteger(g.position) || g.position < 1 || g.position > GESTURE_ACTIONS.length
+      || positions.has(g.position)) {
       throw new Error(`gestures[${i}].position invalid`);
     }
+    positions.add(g.position);
     if (!values(HAND_SHAPES).includes(g.hand)) throw new Error(`gestures[${i}].hand invalid`);
     if (!values(MOTIONS).includes(g.motion)) throw new Error(`gestures[${i}].motion invalid`);
     const note = optionalText(g.note, `gestures[${i}].note`);
     if ((g.hand === 'other' || g.motion === 'other') && note.length < 3) {
       throw new Error(`gestures[${i}].note required`);
     }
-    return { action: g.action, position: g.position, hand: g.hand, motion: g.motion, note };
+    return {
+      action: g.action, position: g.position, hand: g.hand, motion: g.motion, note,
+      fit: rating(g.fit, `gestures[${i}].fit`), ease: rating(g.ease, `gestures[${i}].ease`),
+    };
   });
 
   const about = group(a.about, ABOUT, 'about');
@@ -93,5 +111,7 @@ export function validateSubmission(body) {
     if (contact.length < 3 || contact.length > CONTACT_MAX) throw new Error('contact length');
   }
 
-  return { schemaVersion: SCHEMA_VERSION, answers, contact };
+  return {
+    schemaVersion: SCHEMA_VERSION, submissionId: body.submissionId.toLowerCase(), durationS: body.durationS, answers, contact,
+  };
 }

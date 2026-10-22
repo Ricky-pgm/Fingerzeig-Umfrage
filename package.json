@@ -5,9 +5,13 @@
   "type": "module",
   "description": "Online-Umfrage zum Studienprojekt Fingerzeig (Kochen mit Handgesten)",
   "scripts": {
-    "test": "node --test"
+    "test": "node --test test/*.test.js",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.2.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.64.1"
   }
 }

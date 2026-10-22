@@ -1,10 +1,13 @@
 // Single source of truth for the survey: used by the browser (app.js)
 // and by the server-side validation (api/_validate.js).
 
-export const SCHEMA_VERSION = 1;
+export const SCHEMA_VERSION = 2;
 
 export const TEXT_MAX = 600;
 export const CONTACT_MAX = 120;
+export const RATING_MIN = 1;
+export const RATING_MAX = 5;
+export const DURATION_MAX_S = 86_400;
 
 export const COOKING = {
   frequency: {
@@ -136,6 +139,11 @@ export const ABOUT = {
       ['none', 'Nichts davon'],
     ],
   },
+};
+
+export const RATINGS = {
+  fit: { label: 'Wie gut passt diese Geste zur Aktion?', low: 'passt gar nicht', high: 'passt sehr gut' },
+  ease: { label: 'Wie leicht ist sie auszuführen?', low: 'sehr schwer', high: 'sehr leicht' },
 };
 
 export const values = (options) => options.map((o) => o[0]);
