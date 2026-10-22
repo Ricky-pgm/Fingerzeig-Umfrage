@@ -13,7 +13,8 @@ const port = Number(process.env.PORT || 4173);
 createServer(async (req, res) => {
   const path = new URL(req.url, 'http://localhost').pathname;
   const file = normalize(path === '/' ? '/index.html' : path);
-  const allowed = file === '/index.html' || ['/app.js', '/questions.js', '/styles.css'].includes(file) || file.startsWith('/fonts/');
+  // Same files Vercel serves: the top-level page files and fonts, not config or tests (see .vercelignore).
+  const allowed = (/^\/[\w-]+\.(html|js|css)$/.test(file) && file !== '/playwright.config.js') || file.startsWith('/fonts/');
   if (!allowed) { res.writeHead(404, headers).end(); return; }
   try {
     const body = await readFile(join(root, file));
